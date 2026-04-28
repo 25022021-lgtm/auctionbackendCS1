@@ -15,11 +15,11 @@ import java.lang.annotation.*;
 public @interface NoSpace {
     // Thông điệp lỗi mặc định khi xác thực thất bại
     String message() default "Spaces are not allowed";
-    
+
     // Thuộc tính bắt buộc theo đặc tả của Jakarta Bean Validation để phân nhóm kiểm tra
-    Class<?>[] groups() default{};
+    Class<?>[] groups() default {};
 
     // Thuộc tính bắt buộc chứa thông tin bổ sung đi kèm lỗi (payload)
-    Class<? extends Payload>[] payload() default{};
+    Class<? extends Payload>[] payload() default {};
 
 }
