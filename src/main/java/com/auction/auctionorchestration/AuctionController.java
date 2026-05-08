@@ -22,6 +22,8 @@ import com.auction.common.BaseObjectResponse;
 import com.auction.common.BaseResponse;
 import com.auction.common.ItemPricesSink;
 import com.auction.common.jointdata.BidAndItem;
+import com.auction.items.dto.BaseItemResponse;
+import com.auction.items.dto.PublishItemRequest;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -74,6 +76,24 @@ public class AuctionController {
     public ResponseEntity<BaseResponse> buyNow(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
             @PathVariable Long itemId) {
         BaseResponse response = auctionService.buyItemNow(itemId, userDetailsImpl.getUsername());
+        return ResponseEntity.ok().body(response);
+    }
+
+    @PostMapping("items/cancel/{itemId}")
+    public ResponseEntity<BaseResponse> cancelItem(@PathVariable Long itemId,
+            @AuthenticationPrincipal UserDetailsImpl userDetailsImpl) {
+        BaseResponse response = auctionService.cancelItem(itemId, userDetailsImpl.getUsername());
+        return ResponseEntity.ok().body(response);
+    }
+
+    @PostMapping("/items")
+    public ResponseEntity<BaseItemResponse> postItem(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
+
+            @Valid @RequestBody PublishItemRequest request) {
+
+        BaseItemResponse response = auctionService.publishItem(request,
+                userDetailsImpl.getUsername());
+
         return ResponseEntity.ok().body(response);
     }
 }

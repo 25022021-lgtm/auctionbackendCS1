@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import com.auction.users.User;
+
 @Repository
 public interface ItemRepository extends JpaRepository<Item, Long> {
 
@@ -15,7 +17,6 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
     public Page<Item> findActiveItemPage(Pageable pageable, @Param("currentTime") Long endtime);
 
     // getting the listing of a user
-    @Query(value = "SELECT itemstat.item FROM ItemStatus itemstat WHERE itemstat.highestBidUser = :username")
-    public Page<Item> findItemListing(Pageable pageable, @Param("username") String username);
+    public Page<Item> findItemByUser(Pageable pageable, User user);
 
 }

@@ -20,6 +20,8 @@ import com.auction.common.ItemPricesSink;
 import com.auction.common.jointdata.BidAndItem;
 import com.auction.items.Item;
 import com.auction.items.ItemService;
+import com.auction.items.dto.BaseItemResponse;
+import com.auction.items.dto.PublishItemRequest;
 import com.auction.itemstatus.ItemStatus;
 import com.auction.itemstatus.ItemStatusService;
 import com.auction.users.User;
@@ -144,5 +146,38 @@ public class AuctionService {
             throw new BaseException("You don't have enough money in your balance to buy the item");
         }
         return new BaseResponse(true, "Successfully bought item");
+    }
+
+    @Transactional
+    public BaseItemResponse publishItem(PublishItemRequest request, String username) {
+        User user = userService.getUserReferenceByUsername(username);
+        Item item = itemService.saveItem(new Item(user, request.title(), request.description()));
+
+        // Create Item Status along with the item
+        itemStatusService.saveStatus(
+                new ItemStatus(item, 0.0, username, request.endTime(), request.startingPrice(),
+                        request.buyItNowPrice(), request.bidIncrement()));
+
+        return new BaseItemResponse(true, "Created new item.", item);
+    }
+
+    @Transactional
+    public BaseResponse cancelItem(Long itemId, String username) {
+        Item item = itemService.getItem(itemId);
+
+        if (!item.getUser().getUsername().equals(username)) {
+            throw new BaseException("You are not the owner of this item");
+        }
+
+        ItemStatus status = itemStatusService.getItemStatus(itemId);
+        if (!"ACTIVE".equals(status.getItemStatus())) {
+            throw new BaseException("Only ACTIVE items can be canceled.");
+        }
+
+        status.setItemStatus("CANCELED");
+        status.setEndTime(Instant.now().toEpochMilli());
+        itemStatusService.saveStatus(status);
+
+        return new BaseResponse(true, "Item successfully canceled.");
     }
 }

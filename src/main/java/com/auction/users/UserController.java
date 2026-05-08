@@ -36,4 +36,10 @@ public class UserController {
         return ResponseEntity.ok().body(response);
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<User> profile(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl) {
+        User response = userService.getUserByUsername(userDetailsImpl.getUsername());
+        return ResponseEntity.ok().body(response);
+    }
+
 }

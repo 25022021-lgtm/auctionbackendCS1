@@ -2,25 +2,18 @@ package com.auction.items;
 
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.auction.auth.jwtools.UserDetailsImpl;
 import com.auction.common.BaseObjectResponse;
-import com.auction.common.BaseResponse;
 import com.auction.items.dto.BaseItemResponse;
 import com.auction.items.dto.GetItemPagesResponse;
 import com.auction.items.dto.GetItemsResponse;
-import com.auction.items.dto.PublishItemRequest;
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
@@ -35,27 +28,9 @@ public class ItemController {
         this.itemService = itemService;
     }
 
-    @PostMapping("")
-    public ResponseEntity<BaseItemResponse> postItem(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
-
-            @Valid @RequestBody PublishItemRequest request) {
-
-        BaseItemResponse response = itemService.publishItem(request,
-                userDetailsImpl.getUsername());
-
-        return ResponseEntity.ok().body(response);
-    }
-
-    @PostMapping("/cancel/{itemId}")
-    public ResponseEntity<BaseResponse> cancelItem(@PathVariable Long itemId,
-            @AuthenticationPrincipal UserDetailsImpl userDetailsImpl) {
-        BaseResponse response = itemService.cancelItem(itemId, userDetailsImpl.getUsername());
-        return ResponseEntity.ok().body(response);
-    }
-
     @GetMapping("/{itemId}")
     public ResponseEntity<BaseItemResponse> getItem(@PathVariable Long itemId) {
-        BaseItemResponse response = itemService.getItem(itemId);
+        BaseItemResponse response = itemService.getItemRes(itemId);
         return ResponseEntity.ok().body(response);
     }
 
