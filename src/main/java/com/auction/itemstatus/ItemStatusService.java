@@ -7,17 +7,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.auction.items.Item;
-import com.auction.items.ItemService;
 import com.auction.itemstatus.dto.ItemStatusGetResponse;
 
 @Service
 public class ItemStatusService {
     private final ItemStatusRepository itemStatusRepository;
-    private final ItemService itemService;
 
-    public ItemStatusService(ItemStatusRepository itemStatusRepository, ItemService itemService) {
+    public ItemStatusService(ItemStatusRepository itemStatusRepository) {
         this.itemStatusRepository = itemStatusRepository;
-        this.itemService = itemService;
     }
 
     @Transactional
@@ -38,13 +35,13 @@ public class ItemStatusService {
 
     @Transactional
     public ItemStatusGetResponse getStatusResponse(Long itemId) {
-        ItemStatus itemStatus = itemStatusRepository.findByItemWithLock(itemService.getItemRef(itemId));
+        ItemStatus itemStatus = itemStatusRepository.findByItemWithLockByItemId(itemId);
         return new ItemStatusGetResponse(true, "Succesfully get item status", itemStatus);
     }
 
     @Transactional
     public ItemStatus getItemStatus(Long itemId) {
-        return itemStatusRepository.findByItemWithLock(itemService.getItemRef(itemId));
+        return itemStatusRepository.findByItemWithLockByItemId(itemId);
     }
 
     @Transactional(readOnly = true)
@@ -54,10 +51,10 @@ public class ItemStatusService {
 
     @Transactional
     public boolean auctionEndedOrNot(Long itemId) {
-        Item itemRef = itemService.getItemRef(itemId);
-        ItemStatus itemStatus = itemStatusRepository.findByItemWithLock(itemRef);
-        if (itemStatus.getItemStatus().equals("ENDED") || itemStatus.getItemStatus().equals("CANCELED")
-                || itemStatus.getEndTime() < Instant.now().toEpochMilli()) {
+        ItemStatus itemStatus = itemStatusRepository.findByItemWithLockByItemId(itemId);
+        if (itemStatus.getItemStatus().equals("ENDED") || itemStatus.getItemStatus().equals("CANCELED")) {
+            return true;
+        } else if (itemStatus.getEndTime() < Instant.now().toEpochMilli()) {
             itemStatus.setItemStatus("ENDED");
             itemStatusRepository.save(itemStatus);
             return true;

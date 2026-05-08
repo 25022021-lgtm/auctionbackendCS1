@@ -3,6 +3,7 @@ package com.auction.items;
 import java.time.Instant;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -12,9 +13,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.auction.common.BaseException;
 import com.auction.common.BaseObjectResponse;
+import com.auction.common.BaseResponse;
 import com.auction.items.dto.BaseItemResponse;
 import com.auction.items.dto.GetItemPagesResponse;
 import com.auction.items.dto.GetItemsResponse;
+import com.auction.items.dto.PublishItemRequest;
+import com.auction.itemstatus.ItemStatus;
+import com.auction.itemstatus.ItemStatusService;
 import com.auction.users.User;
 import com.auction.users.UserService;
 
@@ -22,10 +27,50 @@ import com.auction.users.UserService;
 public class ItemService {
     private final ItemRepository itemRepository;
     private final UserService userService;
+    private final ItemStatusService itemStatusService;
 
-    public ItemService(ItemRepository itemRepository, UserService userService) {
+    @Value("${max_extra_time}")
+    private Long maxExtraTime;
+
+    public ItemService(ItemRepository itemRepository, UserService userService,
+            ItemStatusService itemStatusService) {
         this.itemRepository = itemRepository;
         this.userService = userService;
+        this.itemStatusService = itemStatusService;
+    }
+
+    @Transactional
+    public BaseItemResponse publishItem(PublishItemRequest request, String username) {
+        User user = userService.getUserReferenceByUsername(username);
+        Item item = saveItem(new Item(user, request.title(), request.description()));
+        if (request.endTime() < Instant.now().toEpochMilli()) {
+            throw new BaseException("Your end time must be higher than the current time");
+        }
+        itemStatusService.saveStatus(
+                new ItemStatus(item, 0.0, username, request.endTime(), request.startingPrice(),
+                        request.buyItNowPrice(), request.bidIncrement(), request.endTime() + maxExtraTime));
+
+        return new BaseItemResponse(true, "Created new item.", item);
+    }
+
+    @Transactional
+    public BaseResponse cancelItem(Long itemId, String username) {
+        Item item = getItem(itemId);
+
+        if (!item.getUser().getUsername().equals(username)) {
+            throw new BaseException("You are not the owner of this item");
+        }
+
+        ItemStatus status = itemStatusService.getItemStatus(itemId);
+        if (!"ACTIVE".equals(status.getItemStatus()) || itemStatusService.auctionEndedOrNot(itemId)) {
+            throw new BaseException("Only ACTIVE items can be canceled.");
+        }
+
+        status.setItemStatus("CANCELED");
+        status.setEndTime(Instant.now().toEpochMilli());
+        itemStatusService.saveStatus(status);
+
+        return new BaseResponse(true, "Item successfully canceled.");
     }
 
     @Transactional(readOnly = true)
@@ -61,7 +106,6 @@ public class ItemService {
         return itemRepository.existsById(itemId);
     }
 
-    // getItemRef is used for internal
     @Transactional
     public Item getItemRef(Long itemId) {
         return itemRepository.getReferenceById(itemId);

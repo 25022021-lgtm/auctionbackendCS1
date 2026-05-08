@@ -10,10 +10,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.auction.itemstatus.dto.ItemStatusGetResponse;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+
+@SecurityRequirement(name = "bearerAuth")
 @RestController
 @RequestMapping("/item")
 public class ItemStatusController {
-    public final ItemStatusService itemStatusService;
+    private final ItemStatusService itemStatusService;
 
     public ItemStatusController(ItemStatusService itemStatusService) {
         this.itemStatusService = itemStatusService;

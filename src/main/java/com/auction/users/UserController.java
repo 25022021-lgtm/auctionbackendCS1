@@ -12,8 +12,10 @@ import com.auction.auth.jwtools.UserDetailsImpl;
 import com.auction.users.dto.BalanceResponse;
 import com.auction.users.dto.DepositRequest;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 
+@SecurityRequirement(name = "bearerAuth")
 @RestController
 @RequestMapping("/users")
 public class UserController {

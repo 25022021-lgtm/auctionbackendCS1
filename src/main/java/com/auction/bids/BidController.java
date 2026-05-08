@@ -10,9 +10,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.auction.common.BaseObjectResponse;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
+@SecurityRequirement(name = "bearerAuth")
 @RestController
 @RequestMapping("/bids")
 public class BidController {
