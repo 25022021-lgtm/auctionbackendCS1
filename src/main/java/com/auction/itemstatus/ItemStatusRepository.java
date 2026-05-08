@@ -17,4 +17,5 @@ public interface ItemStatusRepository extends JpaRepository<ItemStatus, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query(value = "SELECT s FROM ItemStatus s WHERE s.item = :item")
     ItemStatus findByItemWithLock(@Param("item") Item item);
+
 }

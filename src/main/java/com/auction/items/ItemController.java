@@ -53,18 +53,6 @@ public class ItemController {
         return ResponseEntity.ok().body(response);
     }
 
-    /*
-     * @DeleteMapping("/{itemId}")
-     * public ResponseEntity<BaseResponse> deleteItem(@PathVariable Long itemId,
-     * 
-     * @AuthenticationPrincipal UserDetailsImpl userDetailsImpl) {
-     * 
-     * BaseResponse response = itemService.deleteItem(itemId,
-     * userDetailsImpl.getUsername());
-     * return ResponseEntity.ok().body(response);
-     * }
-     */
-
     @GetMapping("/{itemId}")
     public ResponseEntity<BaseItemResponse> getItem(@PathVariable Long itemId) {
         BaseItemResponse response = itemService.getItem(itemId);

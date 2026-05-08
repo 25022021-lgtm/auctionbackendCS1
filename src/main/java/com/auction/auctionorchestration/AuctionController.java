@@ -19,6 +19,7 @@ import com.auction.auctionorchestration.dto.BidPostResponse;
 import com.auction.auth.jwtools.UserDetailsImpl;
 import com.auction.bids.Bid;
 import com.auction.common.BaseObjectResponse;
+import com.auction.common.BaseResponse;
 import com.auction.common.ItemPricesSink;
 import com.auction.common.jointdata.BidAndItem;
 
@@ -30,15 +31,15 @@ import reactor.core.publisher.Flux;
 @RestController
 @RequestMapping
 public class AuctionController {
-    public final AuctionService auctionService;
-    public final ItemPricesSink itemsPricesSinks;
+    private final AuctionService auctionService;
+    private final ItemPricesSink itemsPricesSinks;
 
     public AuctionController(AuctionService auctionService, ItemPricesSink itemPricesSink) {
         this.auctionService = auctionService;
         this.itemsPricesSinks = itemPricesSink;
     }
 
-    @PostMapping()
+    @PostMapping("/bid")
     public ResponseEntity<BidPostResponse> makeBid(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
             @Valid @RequestBody BidPostRequest request) {
 
@@ -67,5 +68,12 @@ public class AuctionController {
     @GetMapping(value = "/items/stream/{itemId}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<Double> streamPrice(@PathVariable Long itemId) {
         return itemsPricesSinks.getPriceSink(itemId);
+    }
+
+    @PostMapping("/buy-now/{itemId}")
+    public ResponseEntity<BaseResponse> buyNow(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
+            @PathVariable Long itemId) {
+        BaseResponse response = auctionService.buyItemNow(itemId, userDetailsImpl.getUsername());
+        return ResponseEntity.ok().body(response);
     }
 }

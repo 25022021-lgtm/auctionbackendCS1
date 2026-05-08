@@ -12,55 +12,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.auction.common.BaseException;
 import com.auction.common.BaseObjectResponse;
-import com.auction.common.BaseResponse;
 import com.auction.items.Item;
-import com.auction.itemstatus.ItemStatus;
-import com.auction.itemstatus.ItemStatusService;
 import com.auction.users.User;
-import com.auction.users.UserService;
 
 @Service
 public class BidService {
     // Don't inject repository, inject service instead. Refactor tomorrow.
 
     private final BidRepository bidRepository;
-    private final UserService userService;
-    private final ItemStatusService itemStatusService;
 
-    public BidService(BidRepository bidRepository, UserService userService,
-            ItemStatusService itemStatusService) {
+    public BidService(BidRepository bidRepository) {
         this.bidRepository = bidRepository;
-        this.itemStatusService = itemStatusService;
-        this.userService = userService;
-    }
-
-    @Transactional
-    public BaseResponse buyItemNow(Long itemId, String username) {
-        ItemStatus itemStatus = itemStatusService.getItemStatus(itemId);
-        User user = userService.getUserByUsername(username);
-        if (itemStatus.getItemStatus().equals("CANCELED") || itemStatus.getItemStatus().equals("ENDED")
-                || itemStatus.getEndTime() < Instant.now().toEpochMilli()
-                || itemStatus.getBuyItNowPrice() == 0) {
-            throw new BaseException("You can't buy this Item");
-        }
-
-        // Buy now if balance >= buyitnow, buyitnow > currentprice
-        if (user.getBalance() >= itemStatus.getBuyItNowPrice()
-                && itemStatus.getBuyItNowPrice() > itemStatus.getCurrentPrice()) {
-
-            // update bid status
-            itemStatus.setHighestBidUser(username);
-            itemStatus.setCurrentPrice(itemStatus.getBuyItNowPrice());
-            itemStatus.setEndTime(Instant.now().toEpochMilli());
-            itemStatusService.saveStatus(itemStatus);
-
-            // Deduct money from user's fund
-            user.setBalance(user.getBalance() - itemStatus.getBuyItNowPrice());
-            userService.saveUser(user);
-        } else {
-            throw new BaseException("You don't have enough money in your balance to buy the item");
-        }
-        return new BaseResponse(true, "Successfully bought item");
     }
 
     @Transactional(readOnly = true)

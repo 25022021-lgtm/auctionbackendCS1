@@ -56,7 +56,7 @@ public class AuthService {
 
         User user = new User(request.username(), request.displayName(), hashedPassword, 0.0);
         userService.saveUser(user);
-        return new BaseResponse(true, "Succesfully registed.");
+        return new BaseResponse(true, "Succesfully registered.");
     }
 
     @Transactional
