@@ -39,6 +39,9 @@ public class AuctionService {
     @Value("${extra_time}")
     private Long extraTime;
 
+    @Value("${max_extra_time}")
+    private Long maxExtraTime;
+
     public AuctionService(ItemService itemService, UserService userService, ItemStatusService itemStatusService,
             BidService bidService, ItemPricesSink itemPricesSink) {
         this.itemService = itemService;
@@ -88,7 +91,7 @@ public class AuctionService {
         }
 
         user.setBalance(user.getBalance() - (itemStatus.getCurrentPrice() + itemStatus.getBidIncrement()));
-
+        userService.saveUser(user);
         // If the former highest bid user is not the seller (when the item was first
         // published, the seller would be the current highest bidder) the former highest
         // bidder would be refuded.
@@ -170,7 +173,7 @@ public class AuctionService {
         // Create Item Status along with the item
         itemStatusService.saveStatus(
                 new ItemStatus(item, 0.0, username, request.endTime(), request.startingPrice(),
-                        request.buyItNowPrice(), request.bidIncrement()));
+                        request.buyItNowPrice(), request.bidIncrement(), request.endTime() + maxExtraTime));
 
         return new BaseItemResponse(true, "Created new item.", item);
     }
