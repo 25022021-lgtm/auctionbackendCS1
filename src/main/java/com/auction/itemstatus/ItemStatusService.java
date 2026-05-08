@@ -35,6 +35,7 @@ public class ItemStatusService {
         return itemStatus;
     }
 
+    @Transactional
     public ItemStatusGetResponse getStatusResponse(Long itemId) {
         ItemStatus itemStatus = itemStatusRepository.findByItemWithLock(itemRepository.getReferenceById(itemId));
         return new ItemStatusGetResponse(true, "Succesfully get item status", itemStatus);

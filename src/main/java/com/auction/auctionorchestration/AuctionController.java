@@ -3,34 +3,42 @@ package com.auction.auctionorchestration;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.auction.auctionorchestration.dto.BidPostRequest;
 import com.auction.auctionorchestration.dto.BidPostResponse;
 import com.auction.auth.jwtools.UserDetailsImpl;
 import com.auction.bids.Bid;
 import com.auction.common.BaseObjectResponse;
+import com.auction.common.ItemPricesSink;
 import com.auction.common.jointdata.BidAndItem;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import reactor.core.publisher.Flux;
 
+@RestController
 @RequestMapping
 public class AuctionController {
     public final AuctionService auctionService;
+    public final ItemPricesSink itemsPricesSinks;
 
-    public AuctionController(AuctionService auctionService) {
+    public AuctionController(AuctionService auctionService, ItemPricesSink itemPricesSink) {
         this.auctionService = auctionService;
+        this.itemsPricesSinks = itemPricesSink;
     }
 
-    @PostMapping("")
+    @PostMapping()
     public ResponseEntity<BidPostResponse> makeBid(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
             @Valid @RequestBody BidPostRequest request) {
 
@@ -55,4 +63,9 @@ public class AuctionController {
         return ResponseEntity.ok().body(response);
     }
 
+    // Server-Send-Event for realtime bids updating
+    @GetMapping(value = "/items/stream/{itemId}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<Double> streamPrice(@PathVariable Long itemId) {
+        return itemsPricesSinks.getPriceSink(itemId);
+    }
 }

@@ -10,7 +10,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.auction.bids.BidRepository;
 import com.auction.common.BaseException;
 import com.auction.common.BaseObjectResponse;
 import com.auction.common.BaseResponse;
@@ -28,14 +27,12 @@ public class ItemService {
     private final ItemRepository itemRepository;
     private final UserService userService;
     private final ItemStatusService itemStatusService;
-    private final BidRepository bidRepository;
 
     public ItemService(ItemRepository itemRepository, UserService userService,
-            ItemStatusService itemStatusService, BidRepository bidRepository) {
+            ItemStatusService itemStatusService) {
         this.itemRepository = itemRepository;
         this.userService = userService;
         this.itemStatusService = itemStatusService;
-        this.bidRepository = bidRepository;
     }
 
     @Transactional
@@ -51,19 +48,6 @@ public class ItemService {
         return new BaseItemResponse(true, "Created new item.", item);
     }
 
-    // Consider if you want to do a Cascading Deletion here
-    @Transactional
-    public BaseResponse deleteItem(Long itemId, String username) {
-        Item item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new BaseException("There is no Item with that ID"));
-        if (item.getUser().getUsername().equals(username)) {
-            itemRepository.deleteById(itemId);
-            return new BaseResponse(true, "Item " + itemId + " was deleted");
-        } else {
-            throw new BaseException("You are not the owner of this item");
-        }
-    }
-
     @Transactional
     public BaseResponse cancelItem(Long itemId, String username) {
         Item item = itemRepository.findById(itemId)
@@ -71,10 +55,6 @@ public class ItemService {
 
         if (!item.getUser().getUsername().equals(username)) {
             throw new BaseException("You are not the owner of this item");
-        }
-
-        if (bidRepository.existsByItem(item)) {
-            throw new BaseException("Cannot cancel item. You must delete all bids on this item first.");
         }
 
         ItemStatus status = itemStatusService.getItemStatus(itemId);

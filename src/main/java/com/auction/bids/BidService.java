@@ -100,13 +100,4 @@ public class BidService {
         return bids;
     }
 
-    @Transactional
-    public boolean deleteBid(User user, Item item) {
-        Long response = bidRepository.deleteByItemAndUser(item, user);
-        if (response.equals(1)) {
-            return true;
-        } else {
-            return false;
-        }
-    }
 }
