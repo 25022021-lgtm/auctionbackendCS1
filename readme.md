@@ -1,4 +1,5 @@
-# Auction Platform Backend
+# Auction project
+Platform Backend
 
 This project is the backend for a real-time auction platform. It provides a RESTful API for managing users, items, and bidding. The backend is built with Spring Boot and uses a SQLite database.
 

@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.auction.auth.jwtools.UserDetailsImpl;
 import com.auction.common.BaseObjectResponse;
+import com.auction.common.BaseResponse;
 import com.auction.items.dto.BaseItemResponse;
 import com.auction.items.dto.GetItemPagesResponse;
 import com.auction.items.dto.GetItemsResponse;
@@ -42,6 +43,13 @@ public class ItemController {
         BaseItemResponse response = itemService.publishItem(request,
                 userDetailsImpl.getUsername());
 
+        return ResponseEntity.ok().body(response);
+    }
+
+    @PostMapping("/cancel/{itemId}")
+    public ResponseEntity<BaseResponse> cancelItem(@PathVariable Long itemId,
+            @AuthenticationPrincipal UserDetailsImpl userDetailsImpl) {
+        BaseResponse response = itemService.cancelItem(itemId, userDetailsImpl.getUsername());
         return ResponseEntity.ok().body(response);
     }
 

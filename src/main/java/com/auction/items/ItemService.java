@@ -28,13 +28,14 @@ public class ItemService {
     private final ItemRepository itemRepository;
     private final UserService userService;
     private final ItemStatusService itemStatusService;
+    private final BidRepository bidRepository;
 
     public ItemService(ItemRepository itemRepository, UserService userService,
             ItemStatusService itemStatusService, BidRepository bidRepository) {
         this.itemRepository = itemRepository;
         this.userService = userService;
         this.itemStatusService = itemStatusService;
-
+        this.bidRepository = bidRepository;
     }
 
     @Transactional
@@ -55,13 +56,36 @@ public class ItemService {
     public BaseResponse deleteItem(Long itemId, String username) {
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new BaseException("There is no Item with that ID"));
-        itemRepository.deleteById(itemId);
         if (item.getUser().getUsername().equals(username)) {
+            itemRepository.deleteById(itemId);
             return new BaseResponse(true, "Item " + itemId + " was deleted");
         } else {
             throw new BaseException("You are not the owner of this item");
         }
+    }
 
+    @Transactional
+    public BaseResponse cancelItem(Long itemId, String username) {
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new BaseException("There is no Item with that ID"));
+
+        if (!item.getUser().getUsername().equals(username)) {
+            throw new BaseException("You are not the owner of this item");
+        }
+
+        if (bidRepository.existsByItem(item)) {
+            throw new BaseException("Cannot cancel item. You must delete all bids on this item first.");
+        }
+
+        ItemStatus status = itemStatusService.getItemStatus(itemId);
+        if (!"ACTIVE".equals(status.getItemStatus())) {
+            throw new BaseException("Only ACTIVE items can be canceled.");
+        }
+
+        status.setItemStatus("CANCELED");
+        itemStatusService.saveStatus(status);
+
+        return new BaseResponse(true, "Item successfully canceled.");
     }
 
     @Transactional(readOnly = true)

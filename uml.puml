@@ -1,0 +1,50 @@
+@startuml
+
+class User {
+    - String username
+    - String displayName
+    - String hashedPassword
+    - Double balance
+}
+
+class RefreshToken {
+    - String username
+    - String refreshToken
+}
+
+class Item {
+    - Long itemId
+    - User user
+    - String title
+    - String description
+}
+
+class ItemStatus {
+    - Long id
+    - Item item
+    - Double currentPrice
+    - String highestBidUser
+    - Long startTime
+    - Long endTime
+    - Double startingPrice
+    - Double buyItNowPrice
+    - Double bidIncrement
+    - String itemStatus
+}
+
+class Bid {
+    - Long bidId
+    - Item item
+    - User user
+    - Double bidAmount
+    - Long time
+}
+
+
+User "1" -- "1" RefreshToken
+User "1" -- "*" Item : sells >
+User "1" -- "*" Bid : places >
+Item "1" -- "1" ItemStatus : has >
+Item "1" -- "*" Bid : receives >
+
+@enduml
