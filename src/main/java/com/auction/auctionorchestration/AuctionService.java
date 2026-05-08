@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -34,6 +35,9 @@ public class AuctionService {
     private final ItemStatusService itemStatusService;
     private final BidService bidService;
     private final ItemPricesSink itemPricesSink;
+
+    @Value("${extra_time}")
+    private Long extraTime;
 
     public AuctionService(ItemService itemService, UserService userService, ItemStatusService itemStatusService,
             BidService bidService, ItemPricesSink itemPricesSink) {
@@ -96,6 +100,16 @@ public class AuctionService {
         // Update item status in repository to the current highest bidder.
         itemStatus.setHighestBidUser(username);
         itemStatus.setCurrentPrice(request.bidAmount());
+
+        // Anti bidding if item has less than 5 mins, will make the auction have 5 more
+        // minutes.
+        Long time = itemStatus.getEndTime();
+        Long extraTimes = Long.valueOf(extraTime); // this is 5 mins
+        Long now = Instant.now().toEpochMilli();
+        if (time - now < extraTime && time < itemStatus.getMaxEndTime()) {
+            itemStatus.setEndTime(now + extraTimes);
+        }
+
         itemStatusService.saveStatus(itemStatus);
         itemPricesSink.publishPrice(request.itemId(), request.bidAmount());
         return new BidPostResponse(true, "Successfully created bid for an item", bid);

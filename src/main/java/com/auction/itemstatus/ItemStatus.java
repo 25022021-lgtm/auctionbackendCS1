@@ -2,6 +2,8 @@ package com.auction.itemstatus;
 
 import java.time.Instant;
 
+import org.springframework.beans.factory.annotation.Value;
+
 import com.auction.items.Item;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -40,6 +42,9 @@ public class ItemStatus {
     @Column(name = "end_time")
     private Long endTime;
 
+    @Column(name = "max_end_time")
+    private Long maxEndTime;
+
     @Column(name = "starting_price")
     private Double startingPrice;
 
@@ -52,10 +57,13 @@ public class ItemStatus {
     @Column(name = "item_status")
     private String itemStatus;
 
+    @Value("${max_extra_time}")
+    private Long maxExtraTime;
+
     @PrePersist
     void makeItemActive() {
         this.startTime = Instant.now().toEpochMilli();
-
+        this.maxEndTime = endTime + maxExtraTime;
         this.itemStatus = "ACTIVE";
     }
 
@@ -143,6 +151,10 @@ public class ItemStatus {
 
     public Long getStartTime() {
         return startTime;
+    }
+
+    public Long getMaxEndTime() {
+        return maxEndTime;
     }
 
 }
