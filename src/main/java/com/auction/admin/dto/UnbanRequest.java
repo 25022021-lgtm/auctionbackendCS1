@@ -1,8 +1,8 @@
-package com.auction.admin.dto;
+    package com.auction.admin.dto;
 
-import jakarta.validation.constraints.NotBlank;
+    import jakarta.validation.constraints.NotBlank;
 
-public record UnbanRequest(
-    @NotBlank String username,
-    @NotBlank String password
-) {}
+    public record UnbanRequest(
+        @NotBlank String username,
+        @NotBlank String password
+    ) {}
