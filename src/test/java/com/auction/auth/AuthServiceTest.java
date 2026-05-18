@@ -68,7 +68,7 @@ class AuthServiceTest {
 
         // Assert
         assertEquals(true, response.getStatus());
-        assertEquals("Succesfully registed.", response.getMessage());
+        assertEquals("Succesfully registered.", response.getMessage());
         verify(userService).saveUser(any(User.class));
     }
 
