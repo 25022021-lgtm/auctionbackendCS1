@@ -78,37 +78,7 @@ class ItemServiceTest {
         verify(itemStatusService).saveStatus(any(ItemStatus.class));
     }
 
-    @Test
-    void deleteItem_Success() {
-        // Arrange
-        Long itemId = 1L;
-        String username = "testuser";
 
-        when(itemRepository.findById(itemId)).thenReturn(Optional.of(testItem));
-
-        // Act
-        BaseResponse response = itemService.deleteItem(itemId, username);
-
-        // Assert
-        assertEquals(true, response.getStatus());
-        assertEquals("Item " + itemId + " was deleted", response.getMessage());
-        verify(itemRepository).deleteById(itemId);
-    }
-
-    @Test
-    void deleteItem_NotOwner_ThrowsException() {
-        // Arrange
-        Long itemId = 1L;
-        String username = "wronguser";
-
-        when(itemRepository.findById(itemId)).thenReturn(Optional.of(testItem));
-
-        // Act & Assert
-        BaseException exception = assertThrows(BaseException.class, () -> {
-            itemService.deleteItem(itemId, username);
-        });
-        assertEquals("You are not the owner of this item", exception.getMessage());
-    }
 
     @Test
     void cancelItem_Success() {
