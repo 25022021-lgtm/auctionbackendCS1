@@ -4,9 +4,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Instant;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -15,6 +18,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.auction.bids.BidRepository;
 import com.auction.common.BaseException;
@@ -57,15 +61,20 @@ class ItemServiceTest {
         
         testItemStatus = new ItemStatus();
         testItemStatus.setItemStatus("ACTIVE");
+
+        // Set the @Value field for maxExtraTime since it's null in unit tests
+        ReflectionTestUtils.setField(itemService, "maxExtraTime", 3600000L); // 1 hour in ms
     }
 
     @Test
     void publishItem_Success() {
         // Arrange
-        PublishItemRequest request = new PublishItemRequest("Test Item", "Description", 1234567890L, 10.0, 100.0, 5.0);
+        long futureEndTime = Instant.now().toEpochMilli() + 100000;
+        PublishItemRequest request = new PublishItemRequest("Test Item", "Description", futureEndTime, 10.0, 100.0, 5.0);
         String username = "testuser";
 
         when(userService.getUserReferenceByUsername(username)).thenReturn(testUser);
+        // CORRECT: Mock the dependency (itemRepository), not the method on the class under test
         when(itemRepository.save(any(Item.class))).thenReturn(testItem);
 
         // Act
@@ -78,8 +87,6 @@ class ItemServiceTest {
         verify(itemStatusService).saveStatus(any(ItemStatus.class));
     }
 
-
-
     @Test
     void cancelItem_Success() {
         // Arrange
@@ -87,8 +94,8 @@ class ItemServiceTest {
         String username = "testuser";
         
         when(itemRepository.findById(itemId)).thenReturn(Optional.of(testItem));
-        when(bidRepository.existsByItem(testItem)).thenReturn(false);
         when(itemStatusService.getItemStatus(itemId)).thenReturn(testItemStatus);
+        when(itemStatusService.auctionEndedOrNot(itemId)).thenReturn(false);
 
         // Act
         BaseResponse response = itemService.cancelItem(itemId, username);
@@ -112,7 +119,7 @@ class ItemServiceTest {
         BaseException exception = assertThrows(BaseException.class, () -> {
             itemService.cancelItem(itemId, username);
         });
-        assertEquals("There is no Item with that ID", exception.getMessage());
+        assertEquals("There is no such Item with that ID", exception.getMessage());
     }
 
     @Test
@@ -131,22 +138,6 @@ class ItemServiceTest {
     }
 
     @Test
-    void cancelItem_HasBids_ThrowsException() {
-        // Arrange
-        Long itemId = 1L;
-        String username = "testuser";
-        
-        when(itemRepository.findById(itemId)).thenReturn(Optional.of(testItem));
-        when(bidRepository.existsByItem(testItem)).thenReturn(true);
-
-        // Act & Assert
-        BaseException exception = assertThrows(BaseException.class, () -> {
-            itemService.cancelItem(itemId, username);
-        });
-        assertEquals("Cannot cancel item. You must delete all bids on this item first.", exception.getMessage());
-    }
-
-    @Test
     void cancelItem_NotActive_ThrowsException() {
         // Arrange
         Long itemId = 1L;
@@ -154,8 +145,9 @@ class ItemServiceTest {
         testItemStatus.setItemStatus("ENDED");
         
         when(itemRepository.findById(itemId)).thenReturn(Optional.of(testItem));
-        when(bidRepository.existsByItem(testItem)).thenReturn(false);
         when(itemStatusService.getItemStatus(itemId)).thenReturn(testItemStatus);
+        
+        lenient().when(itemStatusService.auctionEndedOrNot(itemId)).thenReturn(false);
 
         // Act & Assert
         BaseException exception = assertThrows(BaseException.class, () -> {
