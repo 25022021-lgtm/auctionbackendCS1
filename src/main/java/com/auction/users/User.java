@@ -32,14 +32,15 @@ public class User {
     private Double balance;
 
     // Constructor mặc định bắt buộc đối với JPA Entity
-    User() {}
+    User() {
+    }
 
     // Constructor đầy đủ tham số
     public User(
-        String username,
-        String displayName,
-        String hashedPassword,
-        Double balance
+            String username,
+            String displayName,
+            String hashedPassword,
+            Double balance
     ) {
         this.username = username;
         this.displayName = displayName;
@@ -88,6 +89,7 @@ public class User {
 
     /**
      * Nạp thêm tiền vào tài khoản người dùng.
+     *
      * @param value Số tiền cần nạp (phải lớn hơn hoặc bằng 0)
      */
     public void addBalance(Double value) {
@@ -100,6 +102,7 @@ public class User {
 
     /**
      * Trừ tiền trong tài khoản người dùng (khi đặt cược hoặc thắng đấu giá).
+     *
      * @param value Số tiền cần trừ (phải lớn hơn hoặc bằng 0)
      */
     public void deductBalance(Double value) {

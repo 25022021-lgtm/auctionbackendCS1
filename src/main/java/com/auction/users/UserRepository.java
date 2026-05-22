@@ -10,10 +10,10 @@ import java.util.Optional;
  */
 @Repository
 public interface UserRepository extends JpaRepository<User, String> {
-    
+
     /**
      * Tìm kiếm một người dùng theo tên đăng nhập (username).
-     * 
+     *
      * @param username Tên đăng nhập cần tìm kiếm
      * @return Một Optional chứa User nếu tìm thấy, ngược lại trả về Optional rỗng
      */
@@ -21,7 +21,7 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     /**
      * Kiểm tra sự tồn tại của tên đăng nhập (username) trong cơ sở dữ liệu.
-     * 
+     *
      * @param username Tên đăng nhập cần kiểm tra
      * @return true nếu tên đăng nhập đã tồn tại, ngược lại trả về false
      */

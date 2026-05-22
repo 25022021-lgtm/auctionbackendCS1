@@ -2,6 +2,7 @@ package com.auction.users;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
@@ -18,14 +19,14 @@ public class UserBalanceSink {
 
     public UserBalanceSink() {
         this.balanceSinksMap = new ConcurrentHashMap<
-            String,
-            Sinks.Many<Double>
-        >();
+                String,
+                Sinks.Many<Double>
+                >();
     }
 
     /**
      * Phát (emit) số dư mới của người dùng tới tất cả các luồng đang lắng nghe.
-     * 
+     *
      * @param username Tên đăng nhập người dùng
      * @param balance  Số dư mới cần cập nhật
      */
@@ -39,18 +40,18 @@ public class UserBalanceSink {
 
     /**
      * Lấy hoặc khởi tạo luồng dữ liệu (Flux) chứa các cập nhật số dư của người dùng cụ thể.
-     * 
+     *
      * @param username Tên đăng nhập người dùng
      * @return Luồng Flux phát số dư (Double) khi có thay đổi
      */
     public Flux<Double> getBalanceSink(String username) {
         // Lấy sink hiện tại hoặc tạo mới nếu chưa tồn tại
         Sinks.Many<Double> sink = balanceSinksMap.computeIfAbsent(
-            username,
-            // Sử dụng multicast().onBackpressureBuffer() để hỗ trợ nhiều subscriber lắng nghe cùng một luồng cập nhật số dư
-            id -> Sinks.many().multicast().onBackpressureBuffer()
+                username,
+                // Sử dụng multicast().onBackpressureBuffer() để hỗ trợ nhiều subscriber lắng nghe cùng một luồng cập nhật số dư
+                id -> Sinks.many().multicast().onBackpressureBuffer()
         );
-        
+
         // Trả về dưới dạng Flux và đăng ký giải phóng tài nguyên khi luồng kết thúc (doFinally)
         return sink.asFlux().doFinally(signalType -> {
             balanceSinksMap.computeIfPresent(username, (id, existingSink) -> {
