@@ -1,10 +1,10 @@
 package com.auction.common;
 
 public class BaseException extends RuntimeException {
-  BaseResponse response;
+    BaseResponse response;
 
-  public BaseException(String message) {
-    super(message);
-    this.response = new BaseResponse(false, message);
-  }
+    public BaseException(String message) {
+        super(message);
+        this.response = new BaseResponse(false, message);
+    }
 }

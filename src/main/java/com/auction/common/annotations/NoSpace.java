@@ -2,6 +2,7 @@ package com.auction.common.annotations;
 
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
+
 import java.lang.annotation.*;
 
 @Documented
@@ -9,11 +10,11 @@ import java.lang.annotation.*;
 @Target({ElementType.FIELD, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface NoSpace {
-  // Error message
-  String message() default "Spaces are not allowed";
+    //Error message
+    String message() default "Spaces are not allowed";
+    //Required by Jakarta Validation spec
+    Class<?>[] groups() default{};
 
-  // Required by Jakarta Validation spec
-  Class<?>[] groups() default {};
+    Class<? extends Payload>[] payload() default{};
 
-  Class<? extends Payload>[] payload() default {};
 }

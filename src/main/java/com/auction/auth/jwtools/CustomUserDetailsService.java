@@ -8,18 +8,17 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
-  private UserRepository userRepository;
+    private UserRepository userRepository;
 
-  public CustomUserDetailsService(UserRepository userRepository) {
-    this.userRepository = userRepository;
-  }
+    public CustomUserDetailsService(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
-  @Override
-  public UserDetailsImpl loadUserByUsername(String username) throws UsernameNotFoundException {
-    User user =
-        userRepository
-            .findByUsername(username)
-            .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-    return UserDetailsImpl.JPAtoUserDetails(user);
-  }
+    @Override
+    public UserDetailsImpl loadUserByUsername(String username) throws UsernameNotFoundException {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        return UserDetailsImpl.JPAtoUserDetails(user);
+
+    }
 }

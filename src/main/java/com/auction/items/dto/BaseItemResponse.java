@@ -4,15 +4,15 @@ import com.auction.common.BaseResponse;
 import com.auction.items.Item;
 
 public class BaseItemResponse extends BaseResponse {
-  private final Item item;
+    private final Item item;
 
-  public BaseItemResponse(boolean status, String message, Item item) {
-    super(status, message);
-    this.item = item;
-  }
+    public BaseItemResponse(boolean status, String message, Item item) {
+        super(status, message);
+        this.item = item;
+    }
 
-  // need getters here so that SpringBoot can access them
-  public Item getItem() {
-    return item;
-  }
+    // need getters here so that SpringBoot can access them
+    public Item getItem() {
+        return item;
+    }
 }

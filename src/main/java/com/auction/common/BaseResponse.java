@@ -1,33 +1,35 @@
 package com.auction.common;
 
 public class BaseResponse {
-  private boolean status;
+    private boolean status;
 
-  private String message;
+    private String message;
 
-  public BaseResponse() {}
+    public BaseResponse() {
+    }
 
-  public BaseResponse(boolean status, String message) {
-    this.status = status;
-    this.message = message;
-  }
+    public BaseResponse(boolean status, String message) {
+        this.status = status;
+        this.message = message;
+    }
 
-  public boolean getStatus() {
-    return status;
-  }
+    public boolean getStatus() {
+        return status;
+    }
 
-  // Empty Constructor so that Jackson can create and use the set methods to
-  // inject data in
+    // Empty Constructor so that Jackson can create and use the set methods to
+    // inject data in
 
-  public void setStatus(boolean status) {
-    this.status = status;
-  }
+    public void setStatus(boolean status) {
+        this.status = status;
+    }
 
-  public String getMessage() {
-    return message;
-  }
+    public String getMessage() {
+        return message;
+    }
 
-  public void setMessage(String message) {
-    this.message = message;
-  }
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
 }
