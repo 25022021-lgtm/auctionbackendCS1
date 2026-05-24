@@ -6,19 +6,22 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+/** Custom implementation of {@link UserDetailsService} that loads users from the database. */
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
-    private UserRepository userRepository;
 
-    public CustomUserDetailsService(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
+  private final UserRepository userRepository;
 
-    @Override
-    public UserDetailsImpl loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-        return UserDetailsImpl.JPAtoUserDetails(user);
+  public CustomUserDetailsService(UserRepository userRepository) {
+    this.userRepository = userRepository;
+  }
 
-    }
+  @Override
+  public UserDetailsImpl loadUserByUsername(String username) throws UsernameNotFoundException {
+    User user =
+        userRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+    return UserDetailsImpl.jpaToUserDetails(user);
+  }
 }
