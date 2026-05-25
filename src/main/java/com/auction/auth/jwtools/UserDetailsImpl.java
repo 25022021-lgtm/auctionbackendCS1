@@ -1,48 +1,53 @@
 package com.auction.auth.jwtools;
 
 import com.auction.users.User;
+import java.util.Collection;
+import java.util.Collections;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.Collection;
-import java.util.Collections;
-
+/** Custom {@link UserDetails} implementation wrapping the application's {@link User} entity. */
 public class UserDetailsImpl implements UserDetails {
-    private String username;
-    private String displayName;
-    private Double balance;
-    private Collection<? extends GrantedAuthority> authorities;
 
-    public UserDetailsImpl(String username, String displayName, Double balance,
-            Collection<? extends GrantedAuthority> authorities) {
-        this.username = username;
-        this.displayName = displayName;
-        this.balance = balance;
-        this.authorities = authorities;
-    }
+  private String username;
+  private String displayName;
+  private Double balance;
+  private Collection<? extends GrantedAuthority> authorities;
 
-    public static UserDetailsImpl JPAtoUserDetails(User user) {
-        return new UserDetailsImpl(user.getUsername(), user.getDisplayName(), user.getBalance(),
-                Collections.emptyList());
-    }
+  public UserDetailsImpl(
+      String username,
+      String displayName,
+      Double balance,
+      Collection<? extends GrantedAuthority> authorities) {
+    this.username = username;
+    this.displayName = displayName;
+    this.balance = balance;
+    this.authorities = authorities;
+  }
 
-    public String getUsername() {
-        return username;
-    }
+  /** Converts a JPA {@link User} entity to a {@link UserDetailsImpl} instance. */
+  public static UserDetailsImpl jpaToUserDetails(User user) {
+    return new UserDetailsImpl(
+        user.getUsername(), user.getDisplayName(), user.getBalance(), Collections.emptyList());
+  }
 
-    public String getPassword() {
-        return "";
-    }
+  public String getUsername() {
+    return username;
+  }
 
-    public String getDisplayName() {
-        return displayName;
-    }
+  public String getPassword() {
+    return "";
+  }
 
-    public Double getBalance() {
-        return balance;
-    }
+  public String getDisplayName() {
+    return displayName;
+  }
 
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return authorities;
-    }
+  public Double getBalance() {
+    return balance;
+  }
+
+  public Collection<? extends GrantedAuthority> getAuthorities() {
+    return authorities;
+  }
 }
