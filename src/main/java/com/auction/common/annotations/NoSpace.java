@@ -11,7 +11,7 @@ import java.lang.annotation.Target;
 /** Custom validation annotation that rejects values containing spaces. */
 @Documented
 @Constraint(validatedBy = NoSpaceValidator.class)
-@Target({ElementType.FIELD, ElementType.METHOD})
+@Target({ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, ElementType.RECORD_COMPONENT})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface NoSpace {
 

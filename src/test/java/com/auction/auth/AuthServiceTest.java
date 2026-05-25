@@ -68,7 +68,7 @@ class AuthServiceTest {
 
         // Assert
         assertEquals(true, response.getStatus());
-        assertEquals("Succesfully registered.", response.getMessage());
+        assertEquals("Successfully registered.", response.getMessage());
         verify(userService).saveUser(any(User.class));
     }
 
@@ -99,7 +99,7 @@ class AuthServiceTest {
 
         // Assert
         assertEquals(true, response.getStatus());
-        assertEquals("Succesfully logged in.", response.getMessage());
+        assertEquals("Successfully logged in.", response.getMessage());
         assertEquals("access_token", response.getAccessToken());
         assertEquals("refresh_token", response.getRefreshToken());
         verify(refreshTokenRepository).save(any(RefreshToken.class));

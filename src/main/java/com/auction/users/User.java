@@ -2,71 +2,72 @@ package com.auction.users;
 
 import com.auction.users.dto.UserResponse;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+/** Entity representing a user in the auction system. */
 @Entity
 @Table(name = "users")
 public class User {
-    @Id
-    @Column(unique = true, nullable = false)
-    private String username;
 
-    @Column(nullable = false)
-    private String displayName;
+  @Id
+  @Column(unique = true, nullable = false)
+  private String username;
 
-    @JsonIgnore
-    @Column(nullable = false)
-    private String hashedPassword;
-    private Double balance;
+  @Column(nullable = false)
+  private String displayName;
 
-    User() {
-    }
+  @JsonIgnore
+  @Column(nullable = false)
+  private String hashedPassword;
 
-    public User(String username, String displayName, String hashedPassword, Double balance) {
-        this.username = username;
-        this.displayName = displayName;
-        this.hashedPassword = hashedPassword;
-        this.balance = balance;
-    }
+  private Double balance;
 
-    public UserResponse toResponse() {
-        return new UserResponse(getUsername(), getDisplayName(), getBalance());
-    }
+  User() {}
 
-    public String getUsername() {
-        return username;
-    }
+  public User(String username, String displayName, String hashedPassword, Double balance) {
+    this.username = username;
+    this.displayName = displayName;
+    this.hashedPassword = hashedPassword;
+    this.balance = balance;
+  }
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
+  /** Converts this entity to a {@link UserResponse} DTO. */
+  public UserResponse toResponse() {
+    return new UserResponse(getUsername(), getDisplayName(), getBalance());
+  }
 
-    public String getDisplayName() {
-        return displayName;
-    }
+  public String getUsername() {
+    return username;
+  }
 
-    public void setDisplayName(String displayName) {
-        this.displayName = displayName;
-    }
+  public void setUsername(String username) {
+    this.username = username;
+  }
 
-    public String getHashedPassword() {
-        return hashedPassword;
-    }
+  public String getDisplayName() {
+    return displayName;
+  }
 
-    public void setHashedPassword(String hashedPassword) {
-        this.hashedPassword = hashedPassword;
-    }
+  public void setDisplayName(String displayName) {
+    this.displayName = displayName;
+  }
 
-    public Double getBalance() {
-        return balance;
-    }
+  public String getHashedPassword() {
+    return hashedPassword;
+  }
 
-    public void setBalance(Double balance) {
-        this.balance = balance;
-    }
+  public void setHashedPassword(String hashedPassword) {
+    this.hashedPassword = hashedPassword;
+  }
 
+  public Double getBalance() {
+    return balance;
+  }
+
+  public void setBalance(Double balance) {
+    this.balance = balance;
+  }
 }

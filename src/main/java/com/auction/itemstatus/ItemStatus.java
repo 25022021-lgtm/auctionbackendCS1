@@ -1,10 +1,7 @@
 package com.auction.itemstatus;
 
-import java.time.Instant;
-
 import com.auction.items.Item;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -13,143 +10,150 @@ import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import java.time.Instant;
 
+/** Entity representing the auction status and pricing details for an {@link Item}. */
 @Entity
 @Table(name = "item_statuses")
 public class ItemStatus {
-    // Put this here so that Jpa does not smite me.
-    @Id
-    private Long id;
 
-    @JsonIgnore
-    @OneToOne
-    @MapsId
-    @JoinColumn(name = "item_id")
-    private Item item;
+  // Put this here so that JPA does not throw an error.
+  @Id private Long id;
 
-    @Column(name = "current_price")
-    private Double currentPrice;
+  @JsonIgnore
+  @OneToOne
+  @MapsId
+  @JoinColumn(name = "item_id")
+  private Item item;
 
-    @Column(name = "username")
-    private String highestBidUser;
+  @Column(name = "current_price")
+  private Double currentPrice;
 
-    // We store as Unix time so backend have less of a headache
-    @Column(name = "start_time")
-    private Long startTime;
+  @Column(name = "username")
+  private String highestBidUser;
 
-    @Column(name = "end_time")
-    private Long endTime;
+  // We store as Unix time so backend has less of a headache.
+  @Column(name = "start_time")
+  private Long startTime;
 
-    @Column(name = "max_end_time")
-    private Long maxEndTime;
+  @Column(name = "end_time")
+  private Long endTime;
 
-    @Column(name = "starting_price")
-    private Double startingPrice;
+  @Column(name = "max_end_time")
+  private Long maxEndTime;
 
-    @Column(name = "buy_it_now_price")
-    private Double buyItNowPrice;
+  @Column(name = "starting_price")
+  private Double startingPrice;
 
-    @Column(name = "bid_increment")
-    private Double bidIncrement;
+  @Column(name = "buy_it_now_price")
+  private Double buyItNowPrice;
 
-    @Column(name = "item_status")
-    private String itemStatus;
+  @Column(name = "bid_increment")
+  private Double bidIncrement;
 
-    @PrePersist
-    void makeItemActive() {
-        this.startTime = Instant.now().toEpochMilli();
-        this.itemStatus = "ACTIVE";
-    }
+  @Column(name = "item_status")
+  private String itemStatus;
 
-    public ItemStatus() {
-    };
+  @PrePersist
+  void makeItemActive() {
+    this.startTime = Instant.now().toEpochMilli();
+    this.itemStatus = "ACTIVE";
+  }
 
-    public ItemStatus(Item item, Double currentPrice, String username, Long endTime, Double startingPrice,
-            Double buyItNowPrice, Double bidIncrement, Long maxEndTime) {
-        this.item = item;
-        this.currentPrice = currentPrice;
-        this.highestBidUser = username;
-        this.endTime = endTime;
-        this.startingPrice = startingPrice;
-        this.buyItNowPrice = buyItNowPrice;
-        this.bidIncrement = bidIncrement;
-        this.maxEndTime = maxEndTime;
-    }
+  public ItemStatus() {}
 
-    public Item getItem() {
-        return item;
-    }
+  public ItemStatus(
+      Item item,
+      Double currentPrice,
+      String username,
+      Long endTime,
+      Double startingPrice,
+      Double buyItNowPrice,
+      Double bidIncrement,
+      Long maxEndTime) {
+    this.item = item;
+    this.currentPrice = currentPrice;
+    this.highestBidUser = username;
+    this.endTime = endTime;
+    this.startingPrice = startingPrice;
+    this.buyItNowPrice = buyItNowPrice;
+    this.bidIncrement = bidIncrement;
+    this.maxEndTime = maxEndTime;
+  }
 
-    public void setItem(Item item) {
-        this.item = item;
-    }
+  public Item getItem() {
+    return item;
+  }
 
-    public Double getCurrentPrice() {
-        return currentPrice;
-    }
+  public void setItem(Item item) {
+    this.item = item;
+  }
 
-    public void setCurrentPrice(Double currentPrice) {
-        this.currentPrice = currentPrice;
-    }
+  public Double getCurrentPrice() {
+    return currentPrice;
+  }
 
-    public String getHighestBidUser() {
-        return highestBidUser;
-    }
+  public void setCurrentPrice(Double currentPrice) {
+    this.currentPrice = currentPrice;
+  }
 
-    public void setHighestBidUser(String highestBidUser) {
-        this.highestBidUser = highestBidUser;
-    }
+  public String getHighestBidUser() {
+    return highestBidUser;
+  }
 
-    public Long getEndTime() {
-        return endTime;
-    }
+  public void setHighestBidUser(String highestBidUser) {
+    this.highestBidUser = highestBidUser;
+  }
 
-    public void setEndTime(Long endTime) {
-        this.endTime = endTime;
-    }
+  public Long getEndTime() {
+    return endTime;
+  }
 
-    public Double getStartingPrice() {
-        return startingPrice;
-    }
+  public void setEndTime(Long endTime) {
+    this.endTime = endTime;
+  }
 
-    public void setStartingPrice(Double startingPrice) {
-        this.startingPrice = startingPrice;
-    }
+  public Double getStartingPrice() {
+    return startingPrice;
+  }
 
-    public Double getBuyItNowPrice() {
-        return buyItNowPrice;
-    }
+  public void setStartingPrice(Double startingPrice) {
+    this.startingPrice = startingPrice;
+  }
 
-    public void setBuyItNowPrice(Double buyItNowPrice) {
-        this.buyItNowPrice = buyItNowPrice;
-    }
+  public Double getBuyItNowPrice() {
+    return buyItNowPrice;
+  }
 
-    public Double getBidIncrement() {
-        return bidIncrement;
-    }
+  public void setBuyItNowPrice(Double buyItNowPrice) {
+    this.buyItNowPrice = buyItNowPrice;
+  }
 
-    public void setBidIncrement(Double bidIncrement) {
-        this.bidIncrement = bidIncrement;
-    }
+  public Double getBidIncrement() {
+    return bidIncrement;
+  }
 
-    public String getItemStatus() {
-        return itemStatus;
-    }
+  public void setBidIncrement(Double bidIncrement) {
+    this.bidIncrement = bidIncrement;
+  }
 
-    public void setItemStatus(String itemStatus) {
-        this.itemStatus = itemStatus;
-    }
+  public String getItemStatus() {
+    return itemStatus;
+  }
 
-    public Long getId() {
-        return id;
-    }
+  public void setItemStatus(String itemStatus) {
+    this.itemStatus = itemStatus;
+  }
 
-    public Long getStartTime() {
-        return startTime;
-    }
+  public Long getId() {
+    return id;
+  }
 
-    public Long getMaxEndTime() {
-        return maxEndTime;
-    }
+  public Long getStartTime() {
+    return startTime;
+  }
 
+  public Long getMaxEndTime() {
+    return maxEndTime;
+  }
 }

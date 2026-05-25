@@ -34,7 +34,7 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
     boolean existsByItem(Item item);
 
     // get all bids on an item
-    @Query(value = "SELECT b FROM Bid b JOIN FETCH b.item WHERE b.item.itemId = :itemId")
+    @Query(value = "SELECT b FROM Bid b WHERE b.item.itemId = :itemId")
     public Page<Bid> findItemBidHistory(Pageable pageable, @Param("itemId") Long itemId);
 
     @NativeQuery(value = "SELECT bids.* FROM bids INNER JOIN items ON bids.item_id = items.item_id INNER JOIN item_statuses ON items.item_id = item_statuses.item_id WHERE :username = bids.bidder_username AND item_statuses.end_time < :now")
