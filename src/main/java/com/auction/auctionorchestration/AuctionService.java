@@ -16,10 +16,12 @@
     import com.auction.itemstatus.ItemStatusService;
     import com.auction.users.User;
     import com.auction.users.UserService;
+
     import java.time.Instant;
     import java.util.ArrayList;
     import java.util.List;
     import java.util.Optional;
+
     import org.springframework.beans.factory.annotation.Value;
     import org.springframework.data.domain.Page;
     import org.springframework.data.domain.PageRequest;
@@ -44,13 +46,7 @@
         @Value("${extra_time}")
         private Long extraTime;
 
-        public AuctionService(
-            ItemService itemService,
-            UserService userService,
-            ItemStatusService itemStatusService,
-            BidService bidService,
-            ItemPricesSink itemPricesSink
-        ) {
+        public AuctionService(ItemService itemService, UserService userService, ItemStatusService itemStatusService, BidService bidService, ItemPricesSink itemPricesSink) {
             this.itemService = itemService;
             this.userService = userService;
             this.itemStatusService = itemStatusService;
@@ -67,26 +63,16 @@
          * @return Phản hồi BaseObjectResponse chứa thông tin chi tiết về lượt cược (Bid) được tạo
          */
         @Transactional
-        public BaseObjectResponse<Bid> createBid(
-            BidPostRequest request,
-            String username
-        ) {
+        public BaseObjectResponse<Bid> createBid(BidPostRequest request, String username) {
             Bid bid;
             Item item = itemService.getItemRef(request.itemId());
             User user = userService.getUserRef(username);
 
             // Lấy trạng thái hiện tại của phiên đấu giá cho sản phẩm này
-            ItemStatus itemStatus = itemStatusService.getItemStatus(
-                request.itemId()
-            );
+            ItemStatus itemStatus = itemStatusService.getItemStatus(request.itemId());
 
             // Kiểm tra các điều kiện nghiệp vụ cơ bản trước khi đặt cược
-            validateBasicBidRequirement(
-                item,
-                user,
-                itemStatus,
-                request.bidAmount()
-            );
+            validateBasicBidRequirement(item, user, itemStatus, request.bidAmount());
 
             // Kiểm tra xem người dùng hiện tại đã từng đặt cược cho sản phẩm này chưa.
             // Nếu đã từng cược, cập nhật số tiền cược mới. Nếu chưa, tạo một lượt cược mới.
@@ -100,15 +86,10 @@
             }
 
             // Tìm cấu hình tự động đấu giá (Auto-Bid) đang chạy trên sản phẩm này
-            Optional<AutoBid> autoBidOP = bidService.getAutoBidByItemId(
-                request.itemId()
-            );
+            Optional<AutoBid> autoBidOP = bidService.getAutoBidByItemId(request.itemId());
 
             // Trường hợp 1: Đã tồn tại một cấu hình Auto-Bid của người khác hoạt động trên sản phẩm này
-            if (
-                autoBidOP.isPresent() &&
-                !autoBidOP.get().getBidder().getUsername().equals(username)
-            ) {
+            if (autoBidOP.isPresent() && !autoBidOP.get().getBidder().getUsername().equals(username)) {
                 AutoBid autoBid = autoBidOP.get();
 
                 // Nếu số tiền cược thủ công mới cộng với bước giá (bidIncrement) vượt quá giới hạn tối đa của Auto-Bid
@@ -121,29 +102,18 @@
                     userService.deductBalance(username, request.bidAmount());
 
                     // Cập nhật người cược thủ công thành người dẫn đầu phiên đấu giá hiện tại
-                    updateItemStatusHighestBidder(
-                        itemStatus,
-                        username,
-                        request.bidAmount()
-                    );
+                    updateItemStatusHighestBidder(itemStatus, username, request.bidAmount());
                 } else {
                     // Ngược lại, Auto-Bid tự động trả giá cao hơn để giữ vị trí dẫn đầu.
                     // Giá cược tự động mới bằng giá trị nhỏ hơn giữa: (giá cược thủ công + bước giá) hoặc (giới hạn tối đa của Auto-Bid).
-                    double autoCounter = Math.min(
-                        request.bidAmount() + itemStatus.getBidIncrement(),
-                        autoBid.getMaxBidLimit()
-                    );
+                    double autoCounter = Math.min(request.bidAmount() + itemStatus.getBidIncrement(), autoBid.getMaxBidLimit());
 
                     // Cập nhật mức cược hiện tại của Auto-Bid và lưu lại vào DB
                     autoBid.setCurrentBidValue(autoCounter);
                     bidService.saveAutoBid(autoBid);
 
                     // Giữ nguyên người cài đặt Auto-Bid làm người dẫn đầu phiên đấu giá với giá cược tự động mới
-                    updateItemStatusHighestBidder(
-                        itemStatus,
-                        autoBid.getBidder().getUsername(),
-                        autoCounter
-                    );
+                    updateItemStatusHighestBidder(itemStatus, autoBid.getBidder().getUsername(), autoCounter);
                 }
             } else {
                 // Trường hợp 2: Không có Auto-Bid của người khác hoạt động trên sản phẩm này
@@ -151,20 +121,12 @@
                 userService.deductBalance(username, request.bidAmount());
 
                 // Hoàn trả lại số tiền cược trước đó cho người dẫn đầu cũ (nếu có và không phải là người tạo ra sản phẩm/chủ sở hữu)
-                if (
-                    !itemStatus
-                        .getHighestBidUser()
-                        .equals(item.getUser().getUsername())
-                ) {
+                if (!itemStatus.getHighestBidUser().equals(item.getUser().getUsername())) {
                     userService.addBalance(itemStatus.getHighestBidUser(), itemStatus.getCurrentPrice());
                 }
 
                 // Cập nhật người cược mới làm người dẫn đầu phiên đấu giá
-                updateItemStatusHighestBidder(
-                    itemStatus,
-                    username,
-                    request.bidAmount()
-                );
+                updateItemStatusHighestBidder(itemStatus, username, request.bidAmount());
             }
 
             // Áp dụng cơ chế Anti-Sniper gia hạn thêm thời gian nếu đặt cược sát giờ kết thúc
@@ -172,15 +134,8 @@
 
             // Lưu trạng thái đấu giá mới và phát sóng (publish) giá mới qua Server-Sent Events (SSE)
             itemStatusService.saveStatus(itemStatus);
-            itemPricesSink.publishPrice(
-                request.itemId(),
-                itemStatus.getCurrentPrice()
-            );
-            return new BaseObjectResponse<>(
-                true,
-                "Successfully created bid for an item",
-                bid
-            );
+            itemPricesSink.publishPrice(request.itemId(), itemStatus.getCurrentPrice());
+            return new BaseObjectResponse<>(true, "Successfully created bid for an item", bid);
         }
 
         /**
@@ -192,21 +147,13 @@
          * @return Phản hồi chứa trang kết quả các lượt cược
          */
         @Transactional(readOnly = true)
-        public BaseObjectResponse<Page<Bid>> getMyCurrentBids(
-            String username,
-            int page,
-            int size
-        ) {
+        public BaseObjectResponse<Page<Bid>> getMyCurrentBids(String username, int page, int size) {
             PageRequest pageable = PageRequest.of(page, size);
             User userRef = userService.getUserRef(username);
 
             Page<Bid> bids = bidService.getAllUserBid(userRef, pageable);
 
-            return new BaseObjectResponse<Page<Bid>>(
-                true,
-                "succesfully got my bids",
-                bids
-            );
+            return new BaseObjectResponse<Page<Bid>>(true, "succesfully got my bids", bids);
         }
 
         /**
@@ -222,11 +169,7 @@
             for (Bid bid : bids) {
                 items.add(new BidAndItem(bid, bid.getItem()));
             }
-            return new BaseObjectResponse<List<BidAndItem>>(
-                true,
-                "successfully returned winnings",
-                items
-            );
+            return new BaseObjectResponse<List<BidAndItem>>(true, "successfully returned winnings", items);
         }
 
         /**
@@ -242,14 +185,9 @@
             ItemStatus itemStatus = itemStatusService.getItemStatus(itemId);
             User user = userService.getUserByUsername(username);
             Item item = itemService.getItem(itemId);
-            
+
             // Kiểm tra các ràng buộc cược cơ bản bằng mức giá mua đứt
-            validateBasicBidRequirement(
-                item,
-                user,
-                itemStatus,
-                itemStatus.getBuyItNowPrice()
-            );
+            validateBasicBidRequirement(item, user, itemStatus, itemStatus.getBuyItNowPrice());
 
             // Lưu thông tin lượt cược mua đứt vào DB và trừ tiền người mua
             Bid bid = new Bid(item, user, itemStatus.getBuyItNowPrice());
@@ -257,18 +195,12 @@
             userService.deductBalance(username, itemStatus.getBuyItNowPrice());
 
             // Hoàn trả lại số tiền cho người giữ vị trí cao nhất trước đó (nếu có)
-            if (
-                !itemStatus.getHighestBidUser().equals(item.getUser().getUsername())
-            ) {
+            if (!itemStatus.getHighestBidUser().equals(item.getUser().getUsername())) {
                 userService.addBalance(itemStatus.getHighestBidUser(), itemStatus.getCurrentPrice());
             }
 
             // Cập nhật người dẫn đầu cao nhất mới và đặt thời gian kết thúc đấu giá về thời điểm hiện tại (đóng phiên ngay lập tức)
-            updateItemStatusHighestBidder(
-                itemStatus,
-                username,
-                itemStatus.getBuyItNowPrice()
-            );
+            updateItemStatusHighestBidder(itemStatus, username, itemStatus.getBuyItNowPrice());
             itemStatus.setEndTime(Instant.now().toEpochMilli());
             itemStatusService.saveStatus(itemStatus);
 
@@ -288,37 +220,18 @@
          * @return Phản hồi trạng thái thiết lập thành công
          */
         @Transactional
-        public BaseResponse createAutoBid(
-            AutoBidRequest request,
-            String bidderName
-        ) {
+        public BaseResponse createAutoBid(AutoBidRequest request, String bidderName) {
             User bidder = userService.getUserByUsername(bidderName);
-            Optional<AutoBid> autoBidOP = bidService.getAutoBidByItemId(
-                request.itemId()
-            );
-            ItemStatus itemStatus = itemStatusService.getItemStatus(
-                request.itemId()
-            );
-            AutoBid currentAutoBid = new AutoBid(
-                request.itemId(),
-                bidder,
-                request.maxBidLimit(),
-                null
-            );
+            Optional<AutoBid> autoBidOP = bidService.getAutoBidByItemId(request.itemId());
+            ItemStatus itemStatus = itemStatusService.getItemStatus(request.itemId());
+            AutoBid currentAutoBid = new AutoBid(request.itemId(), bidder, request.maxBidLimit(), null);
             Item item = itemService.getItem(request.itemId());
-            
+
             // Xác thực hạn mức giá tối đa phải đáp ứng các yêu cầu đấu giá cơ bản
-            validateBasicBidRequirement(
-                item,
-                bidder,
-                itemStatus,
-                request.maxBidLimit()
-            );
+            validateBasicBidRequirement(item, bidder, itemStatus, request.maxBidLimit());
 
             // Kiểm tra xem người dùng hiện tại có phải là người đã cài đặt cấu hình Auto-Bid trước đó trên sản phẩm này không
-            boolean isSameAutoBidder =
-                autoBidOP.isPresent() &&
-                autoBidOP.get().getBidder().getUsername().equals(bidderName);
+            boolean isSameAutoBidder = autoBidOP.isPresent() && autoBidOP.get().getBidder().getUsername().equals(bidderName);
 
             if (isSameAutoBidder) {
                 // Trường hợp người dùng cập nhật lại giới hạn Auto-Bid của chính họ
@@ -347,7 +260,7 @@
                     // Đối thủ thua cuộc: hoàn lại tiền cược cũ của đối thủ, trừ toàn bộ tiền cược tối đa mới của người mới
                     userService.addBalance(prevUser.getUsername(), prevAutoBid.getMaxBidLimit());
                     userService.deductBalance(bidderName, request.maxBidLimit());
-                    
+
                     // Thiết lập giá trị cược hiện tại của Auto-Bid mới bắt đầu từ bước giá kế tiếp (nextBidStep)
                     currentAutoBid.setCurrentBidValue(itemStatus.getNextBidStep());
 
@@ -359,13 +272,9 @@
                     // Nếu cấu hình tối đa mới nhỏ hơn hoặc bằng giới hạn Auto-Bid cũ của đối thủ
                     // Người dùng mới lập tức thất bại. Auto-Bid cũ nâng mức cược hiện tại lên bằng hạn mức của người mới
                     prevAutoBid.setCurrentBidValue(request.maxBidLimit());
-                    
+
                     // Giữ vị trí dẫn đầu cho đối thủ (prevUser) tại mức giá mới này
-                    updateItemStatusHighestBidder(
-                        itemStatus,
-                        prevUser.getUsername(),
-                        prevAutoBid.getCurrentBidValue()
-                    );
+                    updateItemStatusHighestBidder(itemStatus, prevUser.getUsername(), prevAutoBid.getCurrentBidValue());
                     bidService.saveAutoBid(prevAutoBid);
                 }
                 itemStatusService.saveStatus(itemStatus);
@@ -385,7 +294,7 @@
                 // Khấu trừ toàn bộ số tiền tối đa đặt Auto-Bid từ ví tài khoản người cài đặt
                 userService.deductBalance(bidderName, request.maxBidLimit());
             }
-            
+
             // Cập nhật giá sản phẩm và áp dụng gia hạn giờ chống bắn tỉa (Anti-Sniper)
             itemPricesSink.publishPrice(request.itemId(), itemStatus.getCurrentPrice());
             applyAntiBidExtension(itemStatus);
@@ -400,19 +309,14 @@
          * @param itemStatus Trạng thái đấu giá hiện tại của sản phẩm
          * @param value      Số tiền cược cần kiểm tra (hoặc hạn mức tối đa của Auto-Bid)
          */
-        private void validateBasicBidRequirement(
-            Item item,
-            User user,
-            ItemStatus itemStatus,
-            Double value
-        ) {
+        private void validateBasicBidRequirement(Item item, User user, ItemStatus itemStatus, Double value) {
             // Không cho phép người dùng tự đấu giá sản phẩm do chính mình đăng bán
             if (item.getUser().getUsername().equals(user.getUsername())) {
                 throw new BaseException("You can't place bid on your own item");
             }
             // Số tiền cược phải lớn hơn giá khởi điểm
             if (itemStatus.getStartingPrice() > value) {
-            throw new BaseException("Your bid must be higher than the starting price");
+                throw new BaseException("Your bid must be higher than the starting price");
             }
             // Xác thực thời gian phiên đấu giá chưa kết thúc
             validateAuctionNotEnded(item.getItemId());
@@ -443,11 +347,7 @@
         /**
          * Cập nhật thông tin người dẫn đầu cao nhất mới và mức giá hiện tại cho sản phẩm.
          */
-        private void updateItemStatusHighestBidder(
-            ItemStatus itemStatus,
-            String username,
-            Double bidAmount
-        ) {
+        private void updateItemStatusHighestBidder(ItemStatus itemStatus, String username, Double bidAmount) {
             itemStatus.setHighestBidUser(username);
             itemStatus.setCurrentPrice(bidAmount);
         }
@@ -455,16 +355,9 @@
         /**
          * Xác thực mức đặt cược phải cao hơn mức giá hiện tại ít nhất bằng bước giá quy định (bidIncrement).
          */
-        private void validateHigherThanCurrentPrice(
-            ItemStatus itemStatus,
-            Double value
-        ) {
-            if (
-                itemStatus.getCurrentPrice() + itemStatus.getBidIncrement() > value
-            ) {
-                throw new BaseException(
-                    "Your bid must be higher than the current highest"
-                );
+        private void validateHigherThanCurrentPrice(ItemStatus itemStatus, Double value) {
+            if (itemStatus.getCurrentPrice() + itemStatus.getBidIncrement() > value) {
+                throw new BaseException("Your bid must be higher than the current highest");
             }
         }
 
@@ -475,12 +368,8 @@
          * tiến hành gia hạn thêm thời gian kết thúc đúng bằng extraTime tính từ thời điểm đặt cược này.
          */
         private void applyAntiBidExtension(ItemStatus itemStatus) {
-            Long remainingTime =
-                itemStatus.getEndTime() - Instant.now().toEpochMilli();
-            if (
-                remainingTime < extraTime &&
-                itemStatus.getEndTime() < itemStatus.getMaxEndTime()
-            ) {
+            Long remainingTime = itemStatus.getEndTime() - Instant.now().toEpochMilli();
+            if (remainingTime < extraTime && itemStatus.getEndTime() < itemStatus.getMaxEndTime()) {
                 itemStatus.setEndTime(Instant.now().toEpochMilli() + extraTime);
             }
             itemStatusService.saveStatus(itemStatus);

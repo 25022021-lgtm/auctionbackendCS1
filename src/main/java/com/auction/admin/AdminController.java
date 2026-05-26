@@ -32,15 +32,12 @@ public class AdminController {
      * API khóa tài khoản người dùng (Ban User).
      * POST /admin/ban
      *
-     * @param banDetails       Thông tin tên đăng nhập của người dùng cần khóa
-     * @param userDetailsImpl  Thông tin tài khoản Admin đang thực hiện cuộc gọi API này
+     * @param banDetails      Thông tin tên đăng nhập của người dùng cần khóa
+     * @param userDetailsImpl Thông tin tài khoản Admin đang thực hiện cuộc gọi API này
      * @return ResponseEntity phản hồi trạng thái khóa tài khoản thành công
      */
     @PostMapping("/ban")
-    public ResponseEntity<BaseResponse> ban(
-        @Valid @RequestBody BanUserDto banDetails,
-        @AuthenticationPrincipal UserDetailsImpl userDetailsImpl
-    ) {
+    public ResponseEntity<BaseResponse> ban(@Valid @RequestBody BanUserDto banDetails, @AuthenticationPrincipal UserDetailsImpl userDetailsImpl) {
         BaseResponse response = adminService.banUser(banDetails.username());
         return ResponseEntity.ok(response);
     }
@@ -66,9 +63,7 @@ public class AdminController {
      * @return ResponseEntity phản hồi trạng thái mở khóa thành công
      */
     @PostMapping("/unban")
-    public ResponseEntity<BaseResponse> unban(
-        @Valid @RequestBody UnbanRequest request
-    ) {
+    public ResponseEntity<BaseResponse> unban(@Valid @RequestBody UnbanRequest request) {
         BaseResponse response = adminService.unbanUser(request);
         return ResponseEntity.ok().body(response);
     }

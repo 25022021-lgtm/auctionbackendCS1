@@ -74,10 +74,10 @@ public class AdminService {
             throw new BaseException("You can't ban admin");
         }
         User user = userService.getUserByUsername(username);
-        
+
         // Thu hồi các token đăng nhập hiện có của người dùng
         authService.revokeToken(username);
-        
+
         // Thiết lập mật khẩu của người dùng thành mã băm vô hiệu (banHash) để ngăn không cho đăng nhập lại
         user.setHashedPassword(banHash);
         authService.revokeToken(username);
@@ -100,7 +100,7 @@ public class AdminService {
      */
     public BaseResponse unbanUser(UnbanRequest request) {
         User user = userService.getUserByUsername(request.username());
-        
+
         // Mã hóa mật khẩu mới và thay thế mã băm banHash cũ
         String hashedPassword = passwordEncoder.encode(request.password());
         user.setHashedPassword(hashedPassword);
