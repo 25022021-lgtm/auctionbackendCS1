@@ -94,4 +94,29 @@ public class Bid {
         this.time = time;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Bid)) {
+            return false;
+        }
+        Bid bid = (Bid) o;
+        return bidId != null && bidId.equals(bid.bidId);
+    }
+
+    @Override
+    public int hashCode() {
+        return bidId != null ? bidId.hashCode() : 0;
+    }
+
+    @Override
+    public String toString() {
+        return "Bid{" +
+                "bidId=" + bidId +
+                ", bidAmount=" + bidAmount +
+                ", time=" + time +
+                '}';
+    }
 }

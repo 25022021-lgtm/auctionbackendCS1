@@ -70,4 +70,30 @@ public class User {
   public void setBalance(Double balance) {
     this.balance = balance;
   }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof User)) {
+      return false;
+    }
+    User user = (User) o;
+    return username != null && username.equals(user.username);
+  }
+
+  @Override
+  public int hashCode() {
+    return username != null ? username.hashCode() : 0;
+  }
+
+  @Override
+  public String toString() {
+    return "User{"
+        + "username='" + username + '\''
+        + ", displayName='" + displayName + '\''
+        + ", balance=" + balance
+        + '}';
+  }
 }

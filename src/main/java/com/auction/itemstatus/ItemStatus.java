@@ -156,4 +156,37 @@ public class ItemStatus {
   public Long getMaxEndTime() {
     return maxEndTime;
   }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof ItemStatus)) {
+      return false;
+    }
+    ItemStatus that = (ItemStatus) o;
+    return id != null && id.equals(that.id);
+  }
+
+  @Override
+  public int hashCode() {
+    return id != null ? id.hashCode() : 0;
+  }
+
+  @Override
+  public String toString() {
+    return "ItemStatus{"
+        + "id=" + id
+        + ", currentPrice=" + currentPrice
+        + ", highestBidUser='" + highestBidUser + '\''
+        + ", startTime=" + startTime
+        + ", endTime=" + endTime
+        + ", maxEndTime=" + maxEndTime
+        + ", startingPrice=" + startingPrice
+        + ", buyItNowPrice=" + buyItNowPrice
+        + ", bidIncrement=" + bidIncrement
+        + ", itemStatus='" + itemStatus + '\''
+        + '}';
+  }
 }

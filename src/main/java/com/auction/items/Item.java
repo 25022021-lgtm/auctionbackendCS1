@@ -67,4 +67,30 @@ public class Item {
   public void setDescription(String description) {
     this.description = description;
   }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof Item)) {
+      return false;
+    }
+    Item item = (Item) o;
+    return itemId != null && itemId.equals(item.itemId);
+  }
+
+  @Override
+  public int hashCode() {
+    return itemId != null ? itemId.hashCode() : 0;
+  }
+
+  @Override
+  public String toString() {
+    return "Item{"
+        + "itemId=" + itemId
+        + ", title='" + title + '\''
+        + ", description='" + description + '\''
+        + '}';
+  }
 }
