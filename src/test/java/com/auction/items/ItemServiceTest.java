@@ -4,21 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import java.time.Instant;
-import java.util.Optional;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import com.auction.bids.BidRepository;
 import com.auction.common.BaseException;
@@ -29,130 +17,144 @@ import com.auction.itemstatus.ItemStatus;
 import com.auction.itemstatus.ItemStatusService;
 import com.auction.users.User;
 import com.auction.users.UserService;
+import java.time.Instant;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class ItemServiceTest {
 
-    @Mock
-    private ItemRepository itemRepository;
+  @Mock private ItemRepository itemRepository;
 
-    @Mock
-    private UserService userService;
+  @Mock private UserService userService;
 
-    @Mock
-    private ItemStatusService itemStatusService;
+  @Mock private ItemStatusService itemStatusService;
 
-    @Mock
-    private BidRepository bidRepository;
+  @Mock private BidRepository bidRepository;
 
-    @InjectMocks
-    private ItemService itemService;
+  @InjectMocks private ItemService itemService;
 
-    private User testUser;
-    private Item testItem;
-    private ItemStatus testItemStatus;
+  private User testUser;
+  private Item testItem;
+  private ItemStatus testItemStatus;
 
-    @BeforeEach
-    void setUp() {
-        testUser = new User("testuser", "Test User", "hashedpassword", 0.0);
-        
-        testItem = new Item();
-        testItem.setUser(testUser);
-        
-        testItemStatus = new ItemStatus();
-        testItemStatus.setItemStatus("ACTIVE");
+  @BeforeEach
+  void setUp() {
+    testUser = new User("testuser", "Test User", "hashedpassword", 0.0);
 
-        // Set the @Value field for maxExtraTime since it's null in unit tests
-        ReflectionTestUtils.setField(itemService, "maxExtraTime", 3600000L); // 1 hour in ms
-    }
+    testItem = new Item();
+    testItem.setUser(testUser);
 
-    @Test
-    void publishItem_Success() {
-        // Arrange
-        long futureEndTime = Instant.now().toEpochMilli() + 100000;
-        PublishItemRequest request = new PublishItemRequest("Test Item", "Description", futureEndTime, 10.0, 100.0, 5.0);
-        String username = "testuser";
+    testItemStatus = new ItemStatus();
+    testItemStatus.setItemStatus("ACTIVE");
 
-        when(userService.getUserReferenceByUsername(username)).thenReturn(testUser);
-        // CORRECT: Mock the dependency (itemRepository), not the method on the class under test
-        when(itemRepository.save(any(Item.class))).thenReturn(testItem);
+    // Set the @Value field for maxExtraTime since it's null in unit tests
+    ReflectionTestUtils.setField(itemService, "maxExtraTime", 3600000L); // 1 hour in ms
+  }
 
-        // Act
-        BaseItemResponse response = itemService.publishItem(request, username);
+  @Test
+  void publishItem_Success() {
+    // Arrange
+    long futureEndTime = Instant.now().toEpochMilli() + 100000;
+    PublishItemRequest request =
+        new PublishItemRequest("Test Item", "Description", futureEndTime, 10.0, 100.0, 5.0);
+    String username = "testuser";
 
-        // Assert
-        assertEquals(true, response.getStatus());
-        assertEquals("Created new item.", response.getMessage());
-        assertNotNull(response.getItem());
-        verify(itemStatusService).saveStatus(any(ItemStatus.class));
-    }
+    when(userService.getUserReferenceByUsername(username)).thenReturn(testUser);
+    // CORRECT: Mock the dependency (itemRepository), not the method on the class under test
+    when(itemRepository.save(any(Item.class))).thenReturn(testItem);
 
-    @Test
-    void cancelItem_Success() {
-        // Arrange
-        Long itemId = 1L;
-        String username = "testuser";
-        
-        when(itemRepository.findById(itemId)).thenReturn(Optional.of(testItem));
-        when(itemStatusService.getItemStatus(itemId)).thenReturn(testItemStatus);
-        when(itemStatusService.auctionEndedOrNot(itemId)).thenReturn(false);
+    // Act
+    BaseItemResponse response = itemService.publishItem(request, username);
 
-        // Act
-        BaseResponse response = itemService.cancelItem(itemId, username);
+    // Assert
+    assertEquals(true, response.getStatus());
+    assertEquals("Created new item.", response.getMessage());
+    assertNotNull(response.getItem());
+    verify(itemStatusService).saveStatus(any(ItemStatus.class));
+  }
 
-        // Assert
-        assertEquals(true, response.getStatus());
-        assertEquals("Item successfully canceled.", response.getMessage());
-        assertEquals("CANCELED", testItemStatus.getItemStatus());
-        verify(itemStatusService).saveStatus(testItemStatus);
-    }
+  @Test
+  void cancelItem_Success() {
+    // Arrange
+    Long itemId = 1L;
+    String username = "testuser";
 
-    @Test
-    void cancelItem_ItemNotFound_ThrowsException() {
-        // Arrange
-        Long itemId = 1L;
-        String username = "testuser";
-        
-        when(itemRepository.findById(itemId)).thenReturn(Optional.empty());
+    when(itemRepository.findById(itemId)).thenReturn(Optional.of(testItem));
+    when(itemStatusService.getItemStatus(itemId)).thenReturn(testItemStatus);
+    when(itemStatusService.auctionEndedOrNot(itemId)).thenReturn(false);
 
-        // Act & Assert
-        BaseException exception = assertThrows(BaseException.class, () -> {
-            itemService.cancelItem(itemId, username);
-        });
-        assertEquals("There is no such Item with that ID", exception.getMessage());
-    }
+    // Act
+    BaseResponse response = itemService.cancelItem(itemId, username);
 
-    @Test
-    void cancelItem_UserNotOwner_ThrowsException() {
-        // Arrange
-        Long itemId = 1L;
-        String username = "wronguser";
-        
-        when(itemRepository.findById(itemId)).thenReturn(Optional.of(testItem));
+    // Assert
+    assertEquals(true, response.getStatus());
+    assertEquals("Item successfully canceled.", response.getMessage());
+    assertEquals("CANCELED", testItemStatus.getItemStatus());
+    verify(itemStatusService).saveStatus(testItemStatus);
+  }
 
-        // Act & Assert
-        BaseException exception = assertThrows(BaseException.class, () -> {
-            itemService.cancelItem(itemId, username);
-        });
-        assertEquals("You are not the owner of this item", exception.getMessage());
-    }
+  @Test
+  void cancelItem_ItemNotFound_ThrowsException() {
+    // Arrange
+    Long itemId = 1L;
+    String username = "testuser";
 
-    @Test
-    void cancelItem_NotActive_ThrowsException() {
-        // Arrange
-        Long itemId = 1L;
-        String username = "testuser";
-        testItemStatus.setItemStatus("ENDED");
-        
-        when(itemRepository.findById(itemId)).thenReturn(Optional.of(testItem));
-        when(itemStatusService.getItemStatus(itemId)).thenReturn(testItemStatus);
-        
-        lenient().when(itemStatusService.auctionEndedOrNot(itemId)).thenReturn(false);
+    when(itemRepository.findById(itemId)).thenReturn(Optional.empty());
 
-        // Act & Assert
-        BaseException exception = assertThrows(BaseException.class, () -> {
-            itemService.cancelItem(itemId, username);
-        });
-        assertEquals("Only ACTIVE items can be canceled.", exception.getMessage());
-    }
+    // Act & Assert
+    BaseException exception =
+        assertThrows(
+            BaseException.class,
+            () -> {
+              itemService.cancelItem(itemId, username);
+            });
+    assertEquals("There is no such Item with that ID", exception.getMessage());
+  }
+
+  @Test
+  void cancelItem_UserNotOwner_ThrowsException() {
+    // Arrange
+    Long itemId = 1L;
+    String username = "wronguser";
+
+    when(itemRepository.findById(itemId)).thenReturn(Optional.of(testItem));
+
+    // Act & Assert
+    BaseException exception =
+        assertThrows(
+            BaseException.class,
+            () -> {
+              itemService.cancelItem(itemId, username);
+            });
+    assertEquals("You are not the owner of this item", exception.getMessage());
+  }
+
+  @Test
+  void cancelItem_NotActive_ThrowsException() {
+    // Arrange
+    Long itemId = 1L;
+    String username = "testuser";
+    testItemStatus.setItemStatus("ENDED");
+
+    when(itemRepository.findById(itemId)).thenReturn(Optional.of(testItem));
+    when(itemStatusService.getItemStatus(itemId)).thenReturn(testItemStatus);
+
+    lenient().when(itemStatusService.auctionEndedOrNot(itemId)).thenReturn(false);
+
+    // Act & Assert
+    BaseException exception =
+        assertThrows(
+            BaseException.class,
+            () -> {
+              itemService.cancelItem(itemId, username);
+            });
+    assertEquals("Only ACTIVE items can be canceled.", exception.getMessage());
+  }
 }
