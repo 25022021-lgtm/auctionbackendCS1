@@ -1,5 +1,8 @@
 package com.auction.auth.exceptions;
 
-public class JwtExpiredException extends Exception{
+/**
+ * Ngoại lệ ném ra khi mã token JWT đã hết hạn hoặc không hợp lệ.
+ */
+public class JwtExpiredException extends RuntimeException {
     
 }

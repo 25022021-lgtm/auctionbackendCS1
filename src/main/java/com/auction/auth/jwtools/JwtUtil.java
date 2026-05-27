@@ -11,19 +11,29 @@ import org.springframework.stereotype.Component;
 
 import com.auction.auth.exceptions.JwtExpiredException;
 
+/**
+ * Lớp tiện ích quản lý và xử lý mã thông báo JWT (JSON Web Token).
+ * Hỗ trợ tạo Access Token, Refresh Token, trích xuất thông tin claims và kiểm tra tính hợp lệ của token.
+ */
 @Component
 public class JwtUtil {
+    // Chuỗi mã hóa bí mật JWT (cấu hình trong application.properties)
     @Value("${jwt.secret}")
     private String jwtSecret;
 
+    // Thời gian sống của Access Token (ms)
     @Value("${jwt.expiration}")
     private int jwtExpirationms;
 
-    @Value("${jwt.refreshExpiration}") // 7 days
+    // Thời gian sống của Refresh Token (ms)
+    @Value("${jwt.refreshExpiration}")
     private int jwtRefreshExpirationms;
 
     private SecretKey key;
 
+    /**
+     * Khởi tạo đối tượng SecretKey hmacShaKeyFor dựa trên chuỗi khóa bí mật jwtSecret.
+     */
     @PostConstruct
     public void init() {
         this.key = Keys.hmacShaKeyFor(
@@ -31,6 +41,9 @@ public class JwtUtil {
         );
     }
 
+    /**
+     * Tạo mới mã Access Token sử dụng tên tài khoản (username) làm Subject.
+     */
     public String generateToken(String username) {
         return Jwts.builder()
             .subject(username)
@@ -40,6 +53,9 @@ public class JwtUtil {
             .compact();
     }
 
+    /**
+     * Tạo mới mã Refresh Token sử dụng tên tài khoản (username) làm Subject.
+     */
     public String generateRefreshToken(String username) {
         return Jwts.builder()
             .subject(username)
@@ -51,6 +67,9 @@ public class JwtUtil {
             .compact();
     }
 
+    /**
+     * Trích xuất thông tin người dùng (Subject) lưu trong token JWT.
+     */
     public String getUserFromToken(String token) {
         return Jwts.parser()
             .verifyWith(key)
@@ -60,6 +79,9 @@ public class JwtUtil {
             .getSubject();
     }
 
+    /**
+     * Trích xuất thời điểm phát hành (IssuedAt) của token JWT.
+     */
     public Date getIssuedAtFromToken(String token) {
         return Jwts.parser()
             .verifyWith(key)
@@ -69,7 +91,13 @@ public class JwtUtil {
             .getIssuedAt();
     }
 
-    // Checks the jwt claim (the strange hash thing)
+    /**
+     * Kiểm tra tính hợp lệ và chữ ký của token JWT.
+     * 
+     * @param token Chuỗi token JWT cần kiểm tra
+     * @return true nếu token hợp lệ và còn hạn
+     * @throws JwtExpiredException nếu token hết hạn hoặc có chữ ký không hợp lệ
+     */
     public boolean validateJwtToken(String token) throws JwtExpiredException {
         try {
             Jwts.parser().verifyWith(key).build().parseSignedClaims(token);
