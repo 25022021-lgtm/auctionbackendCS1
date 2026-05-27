@@ -57,4 +57,29 @@ public class RefreshToken {
         return createdAt;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof RefreshToken)) {
+            return false;
+        }
+        RefreshToken token = (RefreshToken) o;
+        return username != null && username.equals(token.username);
+    }
+
+    @Override
+    public int hashCode() {
+        return username != null ? username.hashCode() : 0;
+    }
+
+    @Override
+    public String toString() {
+        return "RefreshToken{" +
+                "username='" + username + '\'' +
+                ", refreshToken='" + refreshToken + '\'' +
+                ", createdAt=" + createdAt +
+                '}';
+    }
 }
