@@ -89,13 +89,13 @@ public class ItemService {
         itemRepository
             .findById(itemId)
             .orElseThrow(() -> new BaseException("This Item Id does not exist"));
-    return new BaseItemResponse(true, "Successfully get Item", item);
+    return new BaseItemResponse(true, "Successfully retrieved item", item);
   }
 
   @Transactional(readOnly = true)
   public GetItemsResponse getItems() {
     List<Item> items = itemRepository.findAll();
-    return new GetItemsResponse(true, "Successfully get all items", items);
+    return new GetItemsResponse(true, "Successfully retrieved all items", items);
   }
 
   @Transactional(readOnly = true)
@@ -103,7 +103,7 @@ public class ItemService {
     Pageable pageable = PageRequest.of(page, size, Sort.by("item.title"));
     Page<Item> pages =
         itemRepository.findActiveItemPage(pageable, Instant.now().toEpochMilli());
-    return new GetItemPagesResponse(true, "Successfully got pages", pages);
+    return new GetItemPagesResponse(true, "Successfully retrieved pages of active items", pages);
   }
 
   @Transactional(readOnly = true)
@@ -112,7 +112,7 @@ public class ItemService {
     Pageable pageable = PageRequest.of(page, size);
     User userRef = userService.getUserRef(username);
     Page<Item> items = itemRepository.findItemByUser(pageable, userRef);
-    return new BaseObjectResponse<>(true, "Successfully got listing", items);
+    return new BaseObjectResponse<>(true, "Successfully retrieved listing", items);
   }
 
   @Transactional

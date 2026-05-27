@@ -30,7 +30,7 @@ public class UserService {
     user.setBalance(user.getBalance() + creditAmount);
     user = userRepository.save(user);
     return new BalanceResponse(
-        true, "Successfully deposited credit, current balance", user.getBalance());
+        true, "Credit deposited successfully", user.getBalance());
   }
 
   @Transactional(readOnly = true)
@@ -39,7 +39,7 @@ public class UserService {
         userRepository
             .findByUsername(username)
             .orElseThrow(() -> new BaseException("Invalid username"));
-    return new BalanceResponse(true, "Get balance successful", user.getBalance());
+    return new BalanceResponse(true, "Balance retrieved successfully", user.getBalance());
   }
 
   @Transactional(readOnly = true)

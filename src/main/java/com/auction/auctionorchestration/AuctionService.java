@@ -141,7 +141,7 @@ public class AuctionService {
         for (Bid bid : bids) {
             items.add(new BidAndItem(bid, bid.getItem()));
         }
-        return new BaseObjectResponse<List<BidAndItem>>(true, "sucesfully returned winnings", items);
+        return new BaseObjectResponse<List<BidAndItem>>(true, "successfully returned winnings", items);
     }
 
     @Transactional

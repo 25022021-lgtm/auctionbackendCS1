@@ -27,7 +27,7 @@ public class BidService {
   public BaseObjectResponse<Page<Bid>> getBidsOnItem(Long itemId, int page, int size) {
     Pageable pageable = PageRequest.of(page, size, Sort.by("bidAmount"));
     Page<Bid> items = bidRepository.findItemBidHistory(pageable, itemId);
-    return new BaseObjectResponse<>(true, "Successfully get all bids", items);
+    return new BaseObjectResponse<>(true, "Successfully retrieved all bids", items);
   }
 
   @Transactional(readOnly = true)
