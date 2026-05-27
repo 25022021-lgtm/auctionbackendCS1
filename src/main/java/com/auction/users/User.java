@@ -2,71 +2,98 @@ package com.auction.users;
 
 import com.auction.users.dto.UserResponse;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+/** Entity representing a user in the auction system. */
 @Entity
 @Table(name = "users")
 public class User {
-    @Id
-    @Column(unique = true, nullable = false)
-    private String username;
 
-    @Column(nullable = false)
-    private String displayName;
+  @Id
+  @Column(unique = true, nullable = false)
+  private String username;
 
-    @JsonIgnore
-    @Column(nullable = false)
-    private String hashedPassword;
-    private Double balance;
+  @Column(nullable = false)
+  private String displayName;
 
-    User() {
+  @JsonIgnore
+  @Column(nullable = false)
+  private String hashedPassword;
+
+  private Double balance;
+
+  User() {}
+
+  public User(String username, String displayName, String hashedPassword, Double balance) {
+    this.username = username;
+    this.displayName = displayName;
+    this.hashedPassword = hashedPassword;
+    this.balance = balance;
+  }
+
+  /** Converts this entity to a {@link UserResponse} DTO. */
+  public UserResponse toResponse() {
+    return new UserResponse(getUsername(), getDisplayName(), getBalance());
+  }
+
+  public String getUsername() {
+    return username;
+  }
+
+  public void setUsername(String username) {
+    this.username = username;
+  }
+
+  public String getDisplayName() {
+    return displayName;
+  }
+
+  public void setDisplayName(String displayName) {
+    this.displayName = displayName;
+  }
+
+  public String getHashedPassword() {
+    return hashedPassword;
+  }
+
+  public void setHashedPassword(String hashedPassword) {
+    this.hashedPassword = hashedPassword;
+  }
+
+  public Double getBalance() {
+    return balance;
+  }
+
+  public void setBalance(Double balance) {
+    this.balance = balance;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
     }
-
-    public User(String username, String displayName, String hashedPassword, Double balance) {
-        this.username = username;
-        this.displayName = displayName;
-        this.hashedPassword = hashedPassword;
-        this.balance = balance;
+    if (!(o instanceof User)) {
+      return false;
     }
+    User user = (User) o;
+    return username != null && username.equals(user.username);
+  }
 
-    public UserResponse toResponse() {
-        return new UserResponse(getUsername(), getDisplayName(), getBalance());
-    }
+  @Override
+  public int hashCode() {
+    return username != null ? username.hashCode() : 0;
+  }
 
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getDisplayName() {
-        return displayName;
-    }
-
-    public void setDisplayName(String displayName) {
-        this.displayName = displayName;
-    }
-
-    public String getHashedPassword() {
-        return hashedPassword;
-    }
-
-    public void setHashedPassword(String hashedPassword) {
-        this.hashedPassword = hashedPassword;
-    }
-
-    public Double getBalance() {
-        return balance;
-    }
-
-    public void setBalance(Double balance) {
-        this.balance = balance;
-    }
-
+  @Override
+  public String toString() {
+    return "User{"
+        + "username='" + username + '\''
+        + ", displayName='" + displayName + '\''
+        + ", balance=" + balance
+        + '}';
+  }
 }

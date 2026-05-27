@@ -3,29 +3,30 @@ package com.auction.common.jointdata;
 import com.auction.bids.Bid;
 import com.auction.items.Item;
 
+/** DTO that combines a {@link Bid} with its associated {@link Item}. */
 public class BidAndItem {
-    private Bid bid;
-    private Item item;
 
-    public BidAndItem(Bid bid, Item item) {
-        this.bid = bid;
-        this.item = item;
-    }
+  private Bid bid;
+  private Item item;
 
-    public Bid getBid() {
-        return bid;
-    }
+  public BidAndItem(Bid bid, Item item) {
+    this.bid = bid;
+    this.item = item;
+  }
 
-    public void setBid(Bid bid) {
-        this.bid = bid;
-    }
+  public Bid getBid() {
+    return bid;
+  }
 
-    public Item getItem() {
-        return item;
-    }
+  public void setBid(Bid bid) {
+    this.bid = bid;
+  }
 
-    public void setItem(Item item) {
-        this.item = item;
-    }
+  public Item getItem() {
+    return item;
+  }
 
+  public void setItem(Item item) {
+    this.item = item;
+  }
 }

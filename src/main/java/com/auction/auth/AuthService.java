@@ -44,7 +44,7 @@ public class AuthService {
         token.setRefreshToken(newRefreshToken);
         String accessToken = jwtUtil.generateToken(token.getUsername());
         refreshTokenRepository.save(token);
-        AuthResponse response = new AuthResponse(true, "successfully refresh token", accessToken, newRefreshToken);
+        AuthResponse response = new AuthResponse(true, "successfully refreshed token", accessToken, newRefreshToken);
         return response;
     }
 
@@ -56,7 +56,7 @@ public class AuthService {
 
         User user = new User(request.username(), request.displayName(), hashedPassword, 0.0);
         userService.saveUser(user);
-        return new BaseResponse(true, "Succesfully registered.");
+        return new BaseResponse(true, "Successfully registered.");
     }
 
     @Transactional
@@ -73,7 +73,7 @@ public class AuthService {
 
         // Save the refresh token to the database
         refreshTokenRepository.save(new RefreshToken(user.getUsername(), refreshToken));
-        AuthResponse response = new AuthResponse(true, "Succesfully logged in.", accessToken, refreshToken);
+        AuthResponse response = new AuthResponse(true, "Successfully logged in.", accessToken, refreshToken);
         return response;
     }
 }
