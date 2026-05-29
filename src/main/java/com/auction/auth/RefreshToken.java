@@ -1,67 +1,67 @@
-package com.auction.auth;
+    package com.auction.auth;
 
-import java.time.Instant;
+    import java.time.Instant;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.Table;
-
-/**
- * Thực thể RefreshToken đại diện cho mã làm mới (Refresh Token) được sử dụng để gia hạn Access Token.
- * Được lưu vào cơ sở dữ liệu để kiểm soát phiên làm việc của người dùng.
- */
-@Entity
-@Table(name = "refresh_tokens")
-public class RefreshToken {
-
-    // Tên đăng nhập của người dùng (Khóa chính), mỗi tài khoản chỉ có tối đa một Refresh Token tại một thời điểm
-    @Id
-    @Column(name = "username")
-    private String username;
-
-    // Giá trị của mã Refresh Token mã hóa dạng JWT
-    @Column(name = "token")
-    private String refreshToken;
-
-    // Thời gian tạo Refresh Token (Epoch Milliseconds)
-    @Column(name = "created_at")
-    private Long createdAt;
+    import jakarta.persistence.Column;
+    import jakarta.persistence.Entity;
+    import jakarta.persistence.Id;
+    import jakarta.persistence.PrePersist;
+    import jakarta.persistence.Table;
 
     /**
-     * Sự kiện Jpa Lifecycle Callback: Tự động ghi nhận thời điểm tạo Token trước khi lưu vào DB.
+     * Thực thể RefreshToken đại diện cho mã làm mới (Refresh Token) được sử dụng để gia hạn Access Token.
+     * Được lưu vào cơ sở dữ liệu để kiểm soát phiên làm việc của người dùng.
      */
-    @PrePersist
-    void addTime() {
-        this.createdAt = Instant.now().toEpochMilli();
-    }
+    @Entity
+    @Table(name = "refresh_tokens")
+    public class RefreshToken {
 
-    protected RefreshToken() {
-    }
+        // Tên đăng nhập của người dùng (Khóa chính), mỗi tài khoản chỉ có tối đa một Refresh Token tại một thời điểm
+        @Id
+        @Column(name = "username")
+        private String username;
 
-    public RefreshToken(String username, String refreshToken) {
-        this.username = username;
-        this.refreshToken = refreshToken;
-    }
+        // Giá trị của mã Refresh Token mã hóa dạng JWT
+        @Column(name = "token")
+        private String refreshToken;
 
-    public String getUsername() {
-        return username;
-    }
+        // Thời gian tạo Refresh Token (Epoch Milliseconds)
+        @Column(name = "created_at")
+        private Long createdAt;
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
+        /**
+         * Sự kiện Jpa Lifecycle Callback: Tự động ghi nhận thời điểm tạo Token trước khi lưu vào DB.
+         */
+        @PrePersist
+        void addTime() {
+            this.createdAt = Instant.now().toEpochMilli();
+        }
 
-    public String getRefreshToken() {
-        return refreshToken;
-    }
+        protected RefreshToken() {
+        }
 
-    public void setRefreshToken(String refreshToken) {
-        this.refreshToken = refreshToken;
-    }
+        public RefreshToken(String username, String refreshToken) {
+            this.username = username;
+            this.refreshToken = refreshToken;
+        }
 
-    public Long getCreatedAt() {
-        return createdAt;
+        public String getUsername() {
+            return username;
+        }
+
+        public void setUsername(String username) {
+            this.username = username;
+        }
+
+        public String getRefreshToken() {
+            return refreshToken;
+        }
+
+        public void setRefreshToken(String refreshToken) {
+            this.refreshToken = refreshToken;
+        }
+
+        public Long getCreatedAt() {
+            return createdAt;
+        }
     }
-}
