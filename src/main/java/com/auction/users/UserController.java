@@ -43,5 +43,4 @@ public class UserController {
         User response = userService.getUserByUsername(userDetailsImpl.getUsername());
         return ResponseEntity.ok().body(response);
     }
-
 }
