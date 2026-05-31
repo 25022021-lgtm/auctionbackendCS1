@@ -6,7 +6,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
 @Entity
@@ -24,7 +23,6 @@ public class RefreshToken {
     private Long createdAt;
 
     @PrePersist
-    @PreUpdate
     void addTime() {
         this.createdAt = Instant.now().toEpochMilli();
     }
