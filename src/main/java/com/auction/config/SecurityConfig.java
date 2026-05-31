@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,6 +18,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import com.auction.auth.jwtools.JwtSecurityFilter;
 
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfig {
     private final JwtSecurityFilter jwtSecurityFilter;
 
@@ -62,6 +64,8 @@ public class SecurityConfig {
                                 "/register", "/login", "/refresh")
                         .permitAll()
                         .requestMatchers(HttpMethod.GET, "/items/**", "/item/status/**").permitAll()
+                        // Admin endpoints restricted to ADMIN role
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
                         // Authenticate all other requests
                         .anyRequest().authenticated());
         http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
