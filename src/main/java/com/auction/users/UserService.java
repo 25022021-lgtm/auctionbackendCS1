@@ -61,5 +61,4 @@ public class UserService {
         User userRef = userRepository.getReferenceById(username);
         return userRef;
     }
-
 }

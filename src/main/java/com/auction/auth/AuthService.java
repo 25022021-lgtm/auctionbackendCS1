@@ -38,7 +38,8 @@ public class AuthService {
     public AuthResponse refreshingToken(String refreshToken) {
         RefreshToken token = refreshTokenRepository.findRefreshTokenData(refreshToken)
                 .orElseThrow(() -> new BaseException("invalid refresh token"));
-        if (token.getCreatedAt() + refreshLifetime < Instant.now().toEpochMilli()) {
+        boolean isTokenExpired = token.getCreatedAt() + refreshLifetime < Instant.now().toEpochMilli();
+        if (isTokenExpired) {
             throw new BaseException("Refresh token has expired, please login again");
         }
         String newRefreshToken = jwtUtil.generateRefreshToken(token.getUsername());

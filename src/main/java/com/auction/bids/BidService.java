@@ -2,6 +2,7 @@ package com.auction.bids;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -20,10 +21,12 @@ public class BidService {
     // Don't inject repository, inject service instead. Refactor tomorrow.
 
     private final BidRepository bidRepository;
-
-    public BidService(BidRepository bidRepository) {
+    private final AutoBidRepository autoBidRepository;
+    public BidService(BidRepository bidRepository, AutoBidRepository autoBidRepository) {
         this.bidRepository = bidRepository;
+        this.autoBidRepository = autoBidRepository;
     }
+
 
     @Transactional(readOnly = true)
     public BaseObjectResponse<Page<Bid>> getBidsOnItem(Long itemId, int page, int size) {
@@ -61,5 +64,13 @@ public class BidService {
         List<Bid> bids = bidRepository.getWinsByUser(username, Instant.now().toEpochMilli());
         return bids;
     }
+    @Transactional(readOnly = true)
+    public Optional<AutoBid> getAutoBidByItemId(Long itemId) {
+        return autoBidRepository.findByItemId(itemId);
+    }
 
+    @Transactional
+    public void saveAutoBid(AutoBid autoBid) {
+        autoBidRepository.save(autoBid);
+    }
 }

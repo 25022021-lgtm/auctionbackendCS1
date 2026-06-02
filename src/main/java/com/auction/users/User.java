@@ -68,5 +68,18 @@ public class User {
     public void setBalance(Double balance) {
         this.balance = balance;
     }
-
+    public void addBalance(Double value) {
+        if (value < 0) {
+            System.err.println("Must not add negative value");
+            return;
+        }
+        this.balance += value;
+    }
+    public void deductBalance(Double value) {
+        if (value < 0) {
+            System.err.println("Must not deduct negative value");
+            return;
+        }
+        this.balance -= value;
+    }
 }
