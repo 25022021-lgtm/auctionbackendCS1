@@ -80,7 +80,7 @@ public class AuctionService {
                 autoUser.addBalance(autoBid.getMaxBidLimit());
                 userService.saveUser(autoUser);
                 // deduct user balance
-                user.setBalance(user.getBalance() - request.bidAmount());
+                user.deductBalance(request.bidAmount());
                 userService.saveUser(user);
         
                 updateItemStatusHighestBidder(itemStatus, username, request.bidAmount());
@@ -98,7 +98,7 @@ public class AuctionService {
 
             if (!itemStatus.getHighestBidUser().equals(item.getUser().getUsername())) {
                 User prevUser = userService.getUserByUsername(itemStatus.getHighestBidUser());
-                prevUser.setBalance(prevUser.getBalance() + itemStatus.getCurrentPrice());
+                prevUser.addBalance(itemStatus.getCurrentPrice());
                 userService.saveUser(prevUser);
             }
 
@@ -137,24 +137,26 @@ public class AuctionService {
     public BaseResponse buyItemNow(Long itemId, String username) {
         ItemStatus itemStatus = itemStatusService.getItemStatus(itemId);
         User user = userService.getUserByUsername(username);
-        validateAuctionNotEnded(itemId);
-        // Buy now if balance >= buyitnow, buyitnow > currentprice
-        boolean hasEnoughBalance = user.getBalance() >= itemStatus.getBuyItNowPrice();
-        boolean isBuyNowAboveCurrent = itemStatus.getBuyItNowPrice() > itemStatus.getCurrentPrice();
+        Item item = itemService.getItem(itemId);
+        validateBasicBidRequirement(item, user, itemStatus, itemStatus.getBuyItNowPrice());
 
-        if (hasEnoughBalance && isBuyNowAboveCurrent) {
+        Bid bid = new Bid(item, user, itemStatus.getBuyItNowPrice());
+        bidService.saveBid(bid);
+        user.deductBalance(itemStatus.getBuyItNowPrice());
+        userService.saveUser(user);
 
-            // update bid status
-            updateItemStatusHighestBidder(itemStatus, username, itemStatus.getBuyItNowPrice());
-            itemStatus.setEndTime(Instant.now().toEpochMilli());
-            itemStatusService.saveStatus(itemStatus);
-
-            // Deduct money from user's fund
-            user.setBalance(user.getBalance() - itemStatus.getBuyItNowPrice());
-            userService.saveUser(user);
-        } else {
-            throw new BaseException("You don't have enough money in your balance to buy the item");
+        if (!itemStatus.getHighestBidUser().equals(item.getUser().getUsername())) {
+            User prevUser = userService.getUserByUsername(itemStatus.getHighestBidUser());
+            prevUser.addBalance(itemStatus.getCurrentPrice());
+            userService.saveUser(prevUser);
         }
+
+        updateItemStatusHighestBidder(itemStatus, username, itemStatus.getBuyItNowPrice());
+        itemStatus.setEndTime(Instant.now().toEpochMilli());
+        itemStatusService.saveStatus(itemStatus);
+
+        itemPricesSink.publishPrice(itemId, itemStatus.getBuyItNowPrice());
+
         return new BaseResponse(true, "Successfully bought item");
     }
 

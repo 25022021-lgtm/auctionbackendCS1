@@ -47,7 +47,7 @@ public class ItemService {
             throw new BaseException("Your end time must be higher than the current time");
         }
         itemStatusService.saveStatus(
-                new ItemStatus(item, request.startingPrice(), username, request.endTime(), request.startingPrice(),
+                new ItemStatus(item, 0.0, username, request.endTime(), request.startingPrice(),
                         request.buyItNowPrice(), request.bidIncrement(), request.endTime() + maxExtraTime));
 
         return new BaseItemResponse(true, "Created new item.", item);
