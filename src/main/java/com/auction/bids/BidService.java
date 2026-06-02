@@ -73,4 +73,9 @@ public class BidService {
     public void saveAutoBid(AutoBid autoBid) {
         autoBidRepository.save(autoBid);
     }
+
+    @Transactional
+    public void deleteAutoBid(AutoBid autoBid) {
+        autoBidRepository.delete(autoBid);
+    }
 }
