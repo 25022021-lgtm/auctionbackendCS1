@@ -13,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.auction.auctionorchestration.dto.AutoBidRequest;
 import com.auction.auctionorchestration.dto.BidPostRequest;
-import com.auction.auctionorchestration.dto.BidPostResponse;
 import com.auction.bids.AutoBid;
 import com.auction.bids.Bid;
 import com.auction.bids.BidService;
@@ -50,7 +49,7 @@ public class AuctionService {
     }
 
     @Transactional
-    public BidPostResponse createBid(BidPostRequest request, String username) {
+    public BaseObjectResponse<Bid> createBid(BidPostRequest request, String username) {
         Bid bid;
         Item item = itemService.getItemRef(request.itemId());
         User user = userService.getUserRef(username);
@@ -109,7 +108,7 @@ public class AuctionService {
 
         itemStatusService.saveStatus(itemStatus);
         itemPricesSink.publishPrice(request.itemId(), itemStatus.getCurrentPrice());
-        return new BidPostResponse(true, "Successfully created bid for an item", bid);
+        return new BaseObjectResponse<>(true, "Successfully created bid for an item", bid);
     }
 
     @Transactional(readOnly = true)

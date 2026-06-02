@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.auction.auctionorchestration.dto.AutoBidRequest;
 import com.auction.auctionorchestration.dto.BidPostRequest;
-import com.auction.auctionorchestration.dto.BidPostResponse;
 import com.auction.auth.jwtools.UserDetailsImpl;
 import com.auction.bids.Bid;
 import com.auction.common.BaseObjectResponse;
@@ -43,10 +42,10 @@ public class AuctionController {
     }
 
     @PostMapping("/bid")
-    public ResponseEntity<BidPostResponse> makeBid(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
+    public ResponseEntity<BaseObjectResponse<Bid>> makeBid(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
             @Valid @RequestBody BidPostRequest request) {
 
-        BidPostResponse response = auctionService.createBid(request, userDetailsImpl.getUsername());
+        BaseObjectResponse<Bid> response = auctionService.createBid(request, userDetailsImpl.getUsername());
         return ResponseEntity.ok().body(response);
     }
 

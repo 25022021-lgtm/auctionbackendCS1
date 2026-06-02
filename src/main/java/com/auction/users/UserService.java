@@ -4,7 +4,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.auction.common.BaseException;
-import com.auction.users.dto.BalanceResponse;
+import com.auction.common.BaseObjectResponse;
 
 @Service
 public class UserService {
@@ -21,22 +21,22 @@ public class UserService {
     }
 
     @Transactional
-    public BalanceResponse depositCredit(String username, Double creditAmount) {
+    public BaseObjectResponse<Double> depositCredit(String username, Double creditAmount) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BaseException("Invalid username"));
         user.setBalance(user.getBalance() + creditAmount);
         user = userRepository.save(user);
-        return new BalanceResponse(true,
+        return new BaseObjectResponse<>(true,
                 "Succesfully deposited credit, current balance",
                 user.getBalance());
 
     }
 
     @Transactional(readOnly = true)
-    public BalanceResponse getBalance(String username) {
+    public BaseObjectResponse<Double> getBalance(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BaseException("Invalid username"));
-        return new BalanceResponse(true, "Get balance successful", user.getBalance());
+        return new BaseObjectResponse<>(true, "Get balance successful", user.getBalance());
     }
 
     @Transactional(readOnly = true)

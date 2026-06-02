@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.auction.auth.jwtools.UserDetailsImpl;
-import com.auction.users.dto.BalanceResponse;
+import com.auction.common.BaseObjectResponse;
 import com.auction.users.dto.DepositRequest;
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -26,15 +26,15 @@ public class UserController {
     }
 
     @PostMapping("/me/deposit")
-    public ResponseEntity<BalanceResponse> deposit(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
+    public ResponseEntity<BaseObjectResponse<Double>> deposit(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
             @Valid @RequestBody DepositRequest request) {
-        BalanceResponse response = userService.depositCredit(userDetailsImpl.getUsername(), request.amount());
+        BaseObjectResponse<Double> response = userService.depositCredit(userDetailsImpl.getUsername(), request.amount());
         return ResponseEntity.ok().body(response);
     }
 
     @GetMapping("/me/balance")
-    public ResponseEntity<BalanceResponse> balance(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl) {
-        BalanceResponse response = userService.getBalance(userDetailsImpl.getUsername());
+    public ResponseEntity<BaseObjectResponse<Double>> balance(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl) {
+        BaseObjectResponse<Double> response = userService.getBalance(userDetailsImpl.getUsername());
         return ResponseEntity.ok().body(response);
     }
 

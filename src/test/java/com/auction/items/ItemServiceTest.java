@@ -21,8 +21,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.auction.bids.BidRepository;
 import com.auction.common.BaseException;
+import com.auction.common.BaseObjectResponse;
 import com.auction.common.BaseResponse;
-import com.auction.items.dto.BaseItemResponse;
 import com.auction.items.dto.PublishItemRequest;
 import com.auction.itemstatus.ItemStatus;
 import com.auction.itemstatus.ItemStatusService;
@@ -77,12 +77,12 @@ class ItemServiceTest {
         when(itemRepository.save(any(Item.class))).thenReturn(testItem);
 
         // Act
-        BaseItemResponse response = itemService.publishItem(request, username);
+        BaseObjectResponse<Item> response = itemService.publishItem(request, username);
 
         // Assert
         assertEquals(true, response.getStatus());
         assertEquals("Created new item.", response.getMessage());
-        assertNotNull(response.getItem());
+        assertNotNull(response.getEntity());
         verify(itemStatusService).saveStatus(any(ItemStatus.class));
     }
 

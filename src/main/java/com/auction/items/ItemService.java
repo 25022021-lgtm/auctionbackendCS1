@@ -14,9 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.auction.common.BaseException;
 import com.auction.common.BaseObjectResponse;
 import com.auction.common.BaseResponse;
-import com.auction.items.dto.BaseItemResponse;
-import com.auction.items.dto.GetItemPagesResponse;
-import com.auction.items.dto.GetItemsResponse;
 import com.auction.items.dto.PublishItemRequest;
 import com.auction.itemstatus.ItemStatus;
 import com.auction.itemstatus.ItemStatusService;
@@ -40,7 +37,7 @@ public class ItemService {
     }
 
     @Transactional
-    public BaseItemResponse publishItem(PublishItemRequest request, String username) {
+    public BaseObjectResponse<Item> publishItem(PublishItemRequest request, String username) {
         User user = userService.getUserReferenceByUsername(username);
         Item item = saveItem(new Item(user, request.title(), request.description()));
         if (request.endTime() < Instant.now().toEpochMilli()) {
@@ -50,7 +47,7 @@ public class ItemService {
                 new ItemStatus(item, 0.0, username, request.endTime(), request.startingPrice(),
                         request.buyItNowPrice(), request.bidIncrement(), request.endTime() + maxExtraTime));
 
-        return new BaseItemResponse(true, "Created new item.", item);
+        return new BaseObjectResponse<>(true, "Created new item.", item);
     }
 
     @Transactional
@@ -74,23 +71,23 @@ public class ItemService {
     }
 
     @Transactional(readOnly = true)
-    public BaseItemResponse getItemRes(Long itemId) {
+    public BaseObjectResponse<Item> getItemRes(Long itemId) {
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new BaseException("This Item Id does not exist"));
-        return new BaseItemResponse(true, "Successfully get Item", item);
+        return new BaseObjectResponse<>(true, "Successfully get Item", item);
     }
 
     @Transactional(readOnly = true)
-    public GetItemsResponse getItems() {
+    public BaseObjectResponse<List<Item>> getItems() {
         List<Item> items = itemRepository.findAll();
-        return new GetItemsResponse(true, "Successfully get all items", items);
+        return new BaseObjectResponse<>(true, "Successfully get all items", items);
     }
 
     @Transactional(readOnly = true)
-    public GetItemPagesResponse getActiveItemsByPageTitle(int page, int size) {
+    public BaseObjectResponse<Page<Item>> getActiveItemsByPageTitle(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("item.title"));
         Page<Item> pages = itemRepository.findActiveItemPage(pageable, Instant.now().toEpochMilli());
-        return new GetItemPagesResponse(true, "successfully got pages", pages);
+        return new BaseObjectResponse<>(true, "successfully got pages", pages);
     }
 
     @Transactional(readOnly = true)
