@@ -85,11 +85,12 @@ public class AuctionService {
         
                 updateItemStatusHighestBidder(itemStatus, username, request.bidAmount());
             } else {
+                double autoCounter = Math.min(request.bidAmount() + itemStatus.getBidIncrement(), autoBid.getMaxBidLimit());
 
-                autoBid.setCurrentBidValue(request.bidAmount() + itemStatus.getBidIncrement());
+                autoBid.setCurrentBidValue(autoCounter);
                 bidService.saveAutoBid(autoBid);
 
-                updateItemStatusHighestBidder(itemStatus, autoBid.getBidder().getUsername(), itemStatus.getNextBidStep());
+                updateItemStatusHighestBidder(itemStatus, autoBid.getBidder().getUsername(), autoCounter);
             }
         } else {
             user.deductBalance(request.bidAmount());
@@ -167,61 +168,62 @@ public class AuctionService {
         validateBasicBidRequirement(item, bidder, itemStatus ,request.maxBidLimit());
 
 
-        boolean isHighestBidderAutoBidding = autoBidOP.isPresent() && autoBidOP.get().getBidder().getUsername().equals(itemStatus.getHighestBidUser());
+        boolean isSameAutoBidder = autoBidOP.isPresent()
+                && autoBidOP.get().getBidder().getUsername().equals(bidderName);
 
-        if (isHighestBidderAutoBidding) {
-            // check if current auto bid max value > previous auto bid max value
+        if (isSameAutoBidder) {
             AutoBid prevAutoBid = autoBidOP.get();
-            boolean isHigherPrevAutoBid = request.maxBidLimit() > prevAutoBid.getMaxBidLimit();
+            double oldMax = prevAutoBid.getMaxBidLimit();
+            double newMax = request.maxBidLimit();
+
+            if (newMax > oldMax) {
+                bidder.deductBalance(newMax - oldMax);
+                prevAutoBid.setMaxBidLimit(newMax);
+                bidService.saveAutoBid(prevAutoBid);
+                userService.saveUser(bidder);
+            } else if (newMax < oldMax) {
+                bidder.addBalance(oldMax - newMax);
+                prevAutoBid.setMaxBidLimit(newMax);
+                bidService.saveAutoBid(prevAutoBid);
+                userService.saveUser(bidder);
+            }
+
+        } else if (autoBidOP.isPresent()) {
+            AutoBid prevAutoBid = autoBidOP.get();
             User prevUser = prevAutoBid.getBidder();
-            if (isHigherPrevAutoBid) {
-                if (prevUser.getUsername().equals(bidderName)) {
-                    prevAutoBid.setMaxBidLimit(request.maxBidLimit());
-                    bidService.saveAutoBid(prevAutoBid);
-                }
-                //refund previous bidder
+
+            if (request.maxBidLimit() > prevAutoBid.getMaxBidLimit()) {
                 prevUser.addBalance(prevAutoBid.getMaxBidLimit());
                 userService.saveUser(prevUser);
-                //deduct fund from user and update autobid
+
                 bidder.deductBalance(request.maxBidLimit());
                 currentAutoBid.setCurrentBidValue(itemStatus.getNextBidStep());
-                //save new bidder info
                 userService.saveUser(bidder);
 
-                //Update item status
                 itemStatus.setNextBidStep(bidderName);
 
-                //save bid
-                itemStatusService.saveStatus(itemStatus);
-
-                //save autobid
                 bidService.saveAutoBid(currentAutoBid);
             } else {
-                // pull the previous auto bid equals to current auto bid
                 prevAutoBid.setCurrentBidValue(request.maxBidLimit());
-                //update item status
-                updateItemStatusHighestBidder(itemStatus, prevUser.getUsername(), prevAutoBid.getCurrentBidValue());
-                //save bid service and item status
+                updateItemStatusHighestBidder(itemStatus, prevUser.getUsername(),
+                        prevAutoBid.getCurrentBidValue());
                 bidService.saveAutoBid(prevAutoBid);
-                itemStatusService.saveStatus(itemStatus);
             }
-        
+            itemStatusService.saveStatus(itemStatus);
+
         } else {
-            // Since max of auto bid must be higher than current bid
-            //refund previous bidder
             User prevBidder = userService.getUserByUsername(itemStatus.getHighestBidUser());
             prevBidder.addBalance(itemStatus.getCurrentPrice());
             userService.saveUser(prevBidder);
-            // Add autobidder to autobid
+
             currentAutoBid.setCurrentBidValue(itemStatus.getNextBidStep());
             bidService.saveAutoBid(currentAutoBid);
-            // update itemstatus by step and save it
+
             itemStatus.setNextBidStep(bidderName);
             itemStatusService.saveStatus(itemStatus);
-            // deduct auto bidder money
-            bidder.deductBalance(request.maxBidLimit());
-            userService.saveUser(bidder);           
 
+            bidder.deductBalance(request.maxBidLimit());
+            userService.saveUser(bidder);
         }
         applyAntiBidExtension(itemStatus);
         return new BaseResponse(true, "succesfully make auto bid");

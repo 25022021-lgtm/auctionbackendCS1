@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.auction.auctionorchestration.dto.AutoBidRequest;
 import com.auction.auctionorchestration.dto.BidPostRequest;
 import com.auction.auctionorchestration.dto.BidPostResponse;
 import com.auction.auth.jwtools.UserDetailsImpl;
@@ -75,6 +76,13 @@ public class AuctionController {
     public ResponseEntity<BaseResponse> buyNow(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
             @PathVariable Long itemId) {
         BaseResponse response = auctionService.buyItemNow(itemId, userDetailsImpl.getUsername());
+        return ResponseEntity.ok().body(response);
+    }
+
+    @PostMapping("/auto-bid")
+    public ResponseEntity<BaseResponse> createAutoBid(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
+            @Valid @RequestBody AutoBidRequest request) {
+        BaseResponse response = auctionService.createAutoBid(request, userDetailsImpl.getUsername());
         return ResponseEntity.ok().body(response);
     }
 }
