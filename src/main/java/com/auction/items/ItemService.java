@@ -67,6 +67,11 @@ public class ItemService {
         status.setEndTime(Instant.now().toEpochMilli());
         itemStatusService.saveStatus(status);
 
+        String highestBidUser = status.getHighestBidUser();
+        if (!highestBidUser.equals(item.getUser().getUsername()) && status.getCurrentPrice() > 0) {
+            userService.addBalance(highestBidUser, status.getCurrentPrice());
+        }
+
         return new BaseResponse(true, "Item successfully canceled.");
     }
 

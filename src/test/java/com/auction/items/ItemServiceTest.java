@@ -60,6 +60,7 @@ class ItemServiceTest {
         
         testItemStatus = new ItemStatus();
         testItemStatus.setItemStatus("ACTIVE");
+        testItemStatus.setHighestBidUser(testUser.getUsername());
 
         // Set the @Value field for maxExtraTime since it's null in unit tests
         ReflectionTestUtils.setField(itemService, "maxExtraTime", 3600000L); // 1 hour in ms

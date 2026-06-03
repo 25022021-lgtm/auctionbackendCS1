@@ -9,9 +9,11 @@ import com.auction.common.BaseObjectResponse;
 @Service
 public class UserService {
     private final UserRepository userRepository;
+    private final UserBalanceSink userBalanceSink;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, UserBalanceSink userBalanceSink) {
         this.userRepository = userRepository;
+        this.userBalanceSink = userBalanceSink;
     }
 
     @Transactional
@@ -21,14 +23,28 @@ public class UserService {
     }
 
     @Transactional
+    public Double addBalance(String username, Double amount) {
+        User user = getUserByUsername(username);
+        user.addBalance(amount);
+        userRepository.save(user);
+        userBalanceSink.pushNewBalance(username, user.getBalance());
+        return user.getBalance();
+    }
+
+    @Transactional
+    public void deductBalance(String username, Double amount) {
+        User user = getUserByUsername(username);
+        user.deductBalance(amount);
+        userRepository.save(user);
+        userBalanceSink.pushNewBalance(username, user.getBalance());
+    }
+
+    @Transactional
     public BaseObjectResponse<Double> depositCredit(String username, Double creditAmount) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new BaseException("Invalid username"));
-        user.setBalance(user.getBalance() + creditAmount);
-        user = userRepository.save(user);
+        Double newBalance = addBalance(username, creditAmount);
         return new BaseObjectResponse<>(true,
                 "Succesfully deposited credit, current balance",
-                user.getBalance());
+                newBalance);
 
     }
 

@@ -2,9 +2,11 @@ package com.auction.users;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 
+@Component
 public class UserBalanceSink {
 
     private final Map<String, Sinks.Many<Double>> balanceSinksMap;
@@ -17,8 +19,9 @@ public class UserBalanceSink {
     }
 
     public void pushNewBalance(String username, Double balance) {
-        if (balanceSinksMap.containsKey(username)) {
-            balanceSinksMap.get(username).tryEmitNext(balance);
+        Sinks.Many<Double> sink = balanceSinksMap.get(username);
+        if (sink != null) {
+            sink.tryEmitNext(balance);
         }
     }
 
