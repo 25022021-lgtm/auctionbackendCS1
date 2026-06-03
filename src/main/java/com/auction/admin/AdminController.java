@@ -40,7 +40,7 @@ public class AdminController {
 
     @PostMapping("/unban")
     public ResponseEntity<BaseResponse> unban(
-        @RequestBody UnbanRequest request
+        @Valid @RequestBody UnbanRequest request
     ) {
         BaseResponse response = adminService.unbanUser(request);
         return ResponseEntity.ok().body(response);

@@ -2,6 +2,7 @@ package com.auction.admin;
 
 import com.auction.admin.dto.*;
 import com.auction.auth.AuthService;
+import com.auction.common.*;
 import com.auction.common.BaseResponse;
 import com.auction.items.ItemService;
 import com.auction.users.User;
@@ -35,7 +36,11 @@ public class AdminService {
     }
 
     public BaseResponse banUser(String username) {
+        if (username.equals("admin")) {
+            throw new BaseException("You can't ban admin");
+        }
         User user = userService.getUserByUsername(username);
+        authService.revokeToken(username);
         user.setHashedPassword("1");
         authService.revokeToken(username);
         userService.saveUser(user);
