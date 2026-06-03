@@ -1,7 +1,11 @@
 package com.auction.admin;
 
+import java.time.Instant;
+
 import com.auction.admin.dto.*;
 import com.auction.auth.AuthService;
+import com.auction.auth.RevokedToken;
+import com.auction.auth.RevokedTokenRepository;
 import com.auction.common.*;
 import com.auction.common.BaseResponse;
 import com.auction.items.ItemService;
@@ -17,17 +21,20 @@ public class AdminService {
     private final UserService userService;
     private final AuthService authService;
     private final PasswordEncoder passwordEncoder;
+    private final RevokedTokenRepository revokedTokenRepository;
 
     public AdminService(
         ItemService itemService,
         UserService userService,
         AuthService authService,
-        PasswordEncoder passwordEncoder
+        PasswordEncoder passwordEncoder,
+        RevokedTokenRepository revokedTokenRepository
     ) {
         this.itemService = itemService;
         this.userService = userService;
         this.authService = authService;
         this.passwordEncoder = passwordEncoder;
+        this.revokedTokenRepository = revokedTokenRepository;
     }
 
     public BaseResponse cancelAuction(Long itemId) {
@@ -44,6 +51,11 @@ public class AdminService {
         user.setHashedPassword("1");
         authService.revokeToken(username);
         userService.saveUser(user);
+
+        revokedTokenRepository.save(
+            new RevokedToken(username, Instant.now().toEpochMilli())
+        );
+
         return new BaseResponse(true, "successfully banned user");
     }
 
@@ -52,6 +64,9 @@ public class AdminService {
         String hashedPassword = passwordEncoder.encode(request.password());
         user.setHashedPassword(hashedPassword);
         userService.saveUser(user);
+
+        revokedTokenRepository.deleteById(request.username());
+
         return new BaseResponse(true, "Succesfully unbanned user.");
     }
 }
