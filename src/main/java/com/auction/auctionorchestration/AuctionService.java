@@ -175,7 +175,7 @@ public class AuctionService {
         }
         return new BaseObjectResponse<List<BidAndItem>>(
             true,
-            "sucesfully returned winnings",
+            "successfully returned winnings",
             items
         );
     }
