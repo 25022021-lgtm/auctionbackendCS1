@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -22,8 +21,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.auction.bids.BidRepository;
 import com.auction.common.BaseException;
+import com.auction.common.BaseObjectResponse;
 import com.auction.common.BaseResponse;
-import com.auction.items.dto.BaseItemResponse;
 import com.auction.items.dto.PublishItemRequest;
 import com.auction.itemstatus.ItemStatus;
 import com.auction.itemstatus.ItemStatusService;
@@ -61,6 +60,7 @@ class ItemServiceTest {
         
         testItemStatus = new ItemStatus();
         testItemStatus.setItemStatus("ACTIVE");
+        testItemStatus.setHighestBidUser(testUser.getUsername());
 
         // Set the @Value field for maxExtraTime since it's null in unit tests
         ReflectionTestUtils.setField(itemService, "maxExtraTime", 3600000L); // 1 hour in ms
@@ -78,12 +78,12 @@ class ItemServiceTest {
         when(itemRepository.save(any(Item.class))).thenReturn(testItem);
 
         // Act
-        BaseItemResponse response = itemService.publishItem(request, username);
+        BaseObjectResponse<Item> response = itemService.publishItem(request, username);
 
         // Assert
         assertEquals(true, response.getStatus());
         assertEquals("Created new item.", response.getMessage());
-        assertNotNull(response.getItem());
+        assertNotNull(response.getEntity());
         verify(itemStatusService).saveStatus(any(ItemStatus.class));
     }
 

@@ -151,5 +151,11 @@ public class ItemStatus {
     public Long getMaxEndTime() {
         return maxEndTime;
     }
-
+    public void setNextBidStep(String username) {
+        this.highestBidUser = username;
+        this.currentPrice = getNextBidStep();
+    }
+    public Double getNextBidStep() {
+        return this.getBidIncrement() + this.getCurrentPrice();
+    }
 }

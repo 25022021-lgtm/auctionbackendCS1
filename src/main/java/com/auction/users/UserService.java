@@ -4,14 +4,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.auction.common.BaseException;
-import com.auction.users.dto.BalanceResponse;
+import com.auction.common.BaseObjectResponse;
 
 @Service
 public class UserService {
     private final UserRepository userRepository;
+    private final UserBalanceSink userBalanceSink;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, UserBalanceSink userBalanceSink) {
         this.userRepository = userRepository;
+        this.userBalanceSink = userBalanceSink;
     }
 
     @Transactional
@@ -21,22 +23,36 @@ public class UserService {
     }
 
     @Transactional
-    public BalanceResponse depositCredit(String username, Double creditAmount) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new BaseException("Invalid username"));
-        user.setBalance(user.getBalance() + creditAmount);
-        user = userRepository.save(user);
-        return new BalanceResponse(true,
+    public Double addBalance(String username, Double amount) {
+        User user = getUserByUsername(username);
+        user.addBalance(amount);
+        userRepository.save(user);
+        userBalanceSink.pushNewBalance(username, user.getBalance());
+        return user.getBalance();
+    }
+
+    @Transactional
+    public void deductBalance(String username, Double amount) {
+        User user = getUserByUsername(username);
+        user.deductBalance(amount);
+        userRepository.save(user);
+        userBalanceSink.pushNewBalance(username, user.getBalance());
+    }
+
+    @Transactional
+    public BaseObjectResponse<Double> depositCredit(String username, Double creditAmount) {
+        Double newBalance = addBalance(username, creditAmount);
+        return new BaseObjectResponse<>(true,
                 "Succesfully deposited credit, current balance",
-                user.getBalance());
+                newBalance);
 
     }
 
     @Transactional(readOnly = true)
-    public BalanceResponse getBalance(String username) {
+    public BaseObjectResponse<Double> getBalance(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BaseException("Invalid username"));
-        return new BalanceResponse(true, "Get balance successful", user.getBalance());
+        return new BaseObjectResponse<>(true, "Get balance successful", user.getBalance());
     }
 
     @Transactional(readOnly = true)
@@ -61,5 +77,4 @@ public class UserService {
         User userRef = userRepository.getReferenceById(username);
         return userRef;
     }
-
 }

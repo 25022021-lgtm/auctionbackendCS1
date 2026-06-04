@@ -2,7 +2,6 @@ package com.auction.users;
 
 import com.auction.users.dto.UserResponse;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -11,6 +10,7 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "users")
 public class User {
+
     @Id
     @Column(unique = true, nullable = false)
     private String username;
@@ -21,12 +21,17 @@ public class User {
     @JsonIgnore
     @Column(nullable = false)
     private String hashedPassword;
+
     private Double balance;
 
-    User() {
-    }
+    User() {}
 
-    public User(String username, String displayName, String hashedPassword, Double balance) {
+    public User(
+        String username,
+        String displayName,
+        String hashedPassword,
+        Double balance
+    ) {
         this.username = username;
         this.displayName = displayName;
         this.hashedPassword = hashedPassword;
@@ -69,4 +74,19 @@ public class User {
         this.balance = balance;
     }
 
+    public void addBalance(Double value) {
+        if (value < 0) {
+            System.err.println("Must not add negative value");
+            return;
+        }
+        this.balance += value;
+    }
+
+    public void deductBalance(Double value) {
+        if (value < 0) {
+            System.err.println("Must not deduct negative value");
+            return;
+        }
+        this.balance -= value;
+    }
 }

@@ -2,9 +2,9 @@ name: Spring Boot CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "fix-issues-and-tests" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "fix-issues-and-tests" ]
 
 jobs:
   build:

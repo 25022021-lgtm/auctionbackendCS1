@@ -6,8 +6,8 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.auction.common.BaseObjectResponse;
 import com.auction.items.Item;
-import com.auction.itemstatus.dto.ItemStatusGetResponse;
 
 @Service
 public class ItemStatusService {
@@ -34,9 +34,9 @@ public class ItemStatusService {
     }
 
     @Transactional
-    public ItemStatusGetResponse getStatusResponse(Long itemId) {
+    public BaseObjectResponse<ItemStatus> getStatusResponse(Long itemId) {
         ItemStatus itemStatus = itemStatusRepository.findByItemWithLockByItemId(itemId);
-        return new ItemStatusGetResponse(true, "Succesfully get item status", itemStatus);
+        return new BaseObjectResponse<>(true, "Succesfully get item status", itemStatus);
     }
 
     @Transactional
