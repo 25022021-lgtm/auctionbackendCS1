@@ -92,7 +92,7 @@ public class AuctionService {
         ) {
             AutoBid autoBid = autoBidOP.get();
 
-            if (request.bidAmount() > autoBid.getMaxBidLimit()) {
+            if (request.bidAmount() + itemStatus.getBidIncrement() > autoBid.getMaxBidLimit()) {
                 User autoUser = autoBid.getBidder();
                 userService.addBalance(autoUser.getUsername(), autoBid.getMaxBidLimit());
                 userService.deductBalance(username, request.bidAmount());
