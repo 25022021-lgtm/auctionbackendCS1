@@ -293,6 +293,7 @@ public class AuctionService {
 
             userService.deductBalance(bidderName, request.maxBidLimit());
         }
+        itemPricesSink.publishPrice(request.itemId(), itemStatus.getCurrentPrice());
         applyAntiBidExtension(itemStatus);
         return new BaseResponse(true, "succesfully make auto bid");
     }
