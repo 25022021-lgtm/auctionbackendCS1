@@ -72,6 +72,7 @@ public class AuctionService {
             request.bidAmount()
         );
 
+        // check if user already has a bid on the item or not.
         if (bidService.existUserAndItem(user, item)) {
             bid = bidService.getBidByUserAndItem(user, item);
             bid.setBidAmount(request.bidAmount());
@@ -304,6 +305,9 @@ public class AuctionService {
     ) {
         if (item.getUser().getUsername().equals(user.getUsername())) {
             throw new BaseException("You can't place bid on your own item");
+        }
+        if (itemStatus.getStartingPrice() > value) {
+           throw new BaseException("Your bid must be higher than the starting price"); 
         }
         validateAuctionNotEnded(item.getItemId());
         validateUserHaveEnoughMoney(user, value);
