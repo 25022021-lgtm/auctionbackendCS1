@@ -2,6 +2,7 @@ package com.auction.auth.jwtools;
 
 import com.auction.auth.RevokedToken;
 import com.auction.auth.RevokedTokenRepository;
+import com.auction.users.UserService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,20 +17,21 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+//The actual jwt filter, extending OncePerRequestFilter means that this filer will only get run through once in the entire process.
 @Component
 public class JwtSecurityFilter extends OncePerRequestFilter {
 
-    private JwtUtil jwtUtil;
-    private CustomUserDetailsService userDetailsService;
-    private RevokedTokenRepository revokedTokenRepository;
+    private final JwtUtil jwtUtil;
+    private final RevokedTokenRepository revokedTokenRepository;
+    private final UserService userService;
 
     public JwtSecurityFilter(
         JwtUtil jwtUtil,
-        CustomUserDetailsService userDetailsService,
+        UserService userService,
         RevokedTokenRepository revokedTokenRepository
     ) {
         this.jwtUtil = jwtUtil;
-        this.userDetailsService = userDetailsService;
+        this.userService = userService;
         this.revokedTokenRepository = revokedTokenRepository;
     }
 
@@ -50,18 +52,31 @@ public class JwtSecurityFilter extends OncePerRequestFilter {
             String username = jwtUtil.getUserFromToken(encodedToken);
             Date issuedAt = jwtUtil.getIssuedAtFromToken(encodedToken);
 
-            Optional<RevokedToken> revoked = revokedTokenRepository.findById(username);
+            Optional<RevokedToken> revoked = revokedTokenRepository.findById(
+                username
+            );
+
             if (revoked.isPresent()) {
-                if (!issuedAt.toInstant().isAfter(Instant.ofEpochMilli(revoked.get().getBannedAt()))) {
+                // if the time of issued is before the time of the revoke -> user is banned.
+                // else if the time of the issue is after the time of the revoke -> means that the user has been unbanned (since they were logged in)
+                if (
+                    !issuedAt
+                        .toInstant()
+                        .isAfter(
+                            Instant.ofEpochMilli(revoked.get().getBannedAt())
+                        )
+                ) {
                     filterChain.doFilter(request, response);
                     return;
                 }
                 revokedTokenRepository.delete(revoked.get());
             }
 
-            UserDetailsImpl userDetails = userDetailsService.loadUserByUsername(
-                username
+            UserDetailsImpl userDetails = UserDetailsImpl.JPAtoUserDetails(
+                userService.getUserByUsername(username)
             );
+
+            // authenticationToken is a warapper for UserDetailsImpl
             UsernamePasswordAuthenticationToken authenticationToken =
                 new UsernamePasswordAuthenticationToken(
                     userDetails,
@@ -75,9 +90,11 @@ public class JwtSecurityFilter extends OncePerRequestFilter {
                 authenticationToken
             );
         }
+        // Continue the fiterChain
         filterChain.doFilter(request, response);
     }
 
+    // Checks basic structure of jwt
     public String parseJwt(HttpServletRequest request) {
         String authenticationHeader = request.getHeader("Authorization");
 

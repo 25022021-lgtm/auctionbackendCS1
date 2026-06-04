@@ -1,17 +1,20 @@
 package com.auction.users;
 
+import com.auction.common.BaseException;
+import com.auction.common.BaseObjectResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.auction.common.BaseException;
-import com.auction.common.BaseObjectResponse;
-
 @Service
 public class UserService {
+
     private final UserRepository userRepository;
     private final UserBalanceSink userBalanceSink;
 
-    public UserService(UserRepository userRepository, UserBalanceSink userBalanceSink) {
+    public UserService(
+        UserRepository userRepository,
+        UserBalanceSink userBalanceSink
+    ) {
         this.userRepository = userRepository;
         this.userBalanceSink = userBalanceSink;
     }
@@ -40,24 +43,35 @@ public class UserService {
     }
 
     @Transactional
-    public BaseObjectResponse<Double> depositCredit(String username, Double creditAmount) {
+    public BaseObjectResponse<Double> depositCredit(
+        String username,
+        Double creditAmount
+    ) {
         Double newBalance = addBalance(username, creditAmount);
-        return new BaseObjectResponse<>(true,
-                "Succesfully deposited credit, current balance",
-                newBalance);
-
+        return new BaseObjectResponse<>(
+            true,
+            "Succesfully deposited credit, current balance",
+            newBalance
+        );
     }
 
     @Transactional(readOnly = true)
     public BaseObjectResponse<Double> getBalance(String username) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new BaseException("Invalid username"));
-        return new BaseObjectResponse<>(true, "Get balance successful", user.getBalance());
+        User user = userRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new BaseException("Invalid username"));
+        return new BaseObjectResponse<>(
+            true,
+            "Get balance successful",
+            user.getBalance()
+        );
     }
 
     @Transactional(readOnly = true)
     public User getUserByUsername(String username) {
-        return userRepository.findByUsername(username).orElseThrow(() -> new BaseException("User not found"));
+        return userRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new BaseException("User not found"));
     }
 
     @Transactional(readOnly = true)

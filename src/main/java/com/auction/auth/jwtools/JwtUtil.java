@@ -68,6 +68,7 @@ public class JwtUtil {
             .getIssuedAt();
     }
 
+    // Checks the jwt claim (the strange hash thing)
     public boolean validateJwtToken(String token) {
         try {
             Jwts.parser().verifyWith(key).build().parseSignedClaims(token);
