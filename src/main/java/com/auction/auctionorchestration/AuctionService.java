@@ -1,17 +1,8 @@
 package com.auction.auctionorchestration;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
+import com.auction.auctionorchestration.dto.AutoBidRequest;
 import com.auction.auctionorchestration.dto.BidPostRequest;
-import com.auction.auctionorchestration.dto.BidPostResponse;
+import com.auction.bids.AutoBid;
 import com.auction.bids.Bid;
 import com.auction.bids.BidService;
 import com.auction.common.BaseException;
@@ -25,20 +16,35 @@ import com.auction.itemstatus.ItemStatus;
 import com.auction.itemstatus.ItemStatusService;
 import com.auction.users.User;
 import com.auction.users.UserService;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AuctionService {
+
     private final ItemService itemService;
     private final UserService userService;
     private final ItemStatusService itemStatusService;
     private final BidService bidService;
     private final ItemPricesSink itemPricesSink;
 
-    @Value("${extra-time}")
+    @Value("${extra_time}")
     private Long extraTime;
 
-    public AuctionService(ItemService itemService, UserService userService, ItemStatusService itemStatusService,
-            BidService bidService, ItemPricesSink itemPricesSink) {
+    public AuctionService(
+        ItemService itemService,
+        UserService userService,
+        ItemStatusService itemStatusService,
+        BidService bidService,
+        ItemPricesSink itemPricesSink
+    ) {
         this.itemService = itemService;
         this.userService = userService;
         this.itemStatusService = itemStatusService;
@@ -47,101 +53,131 @@ public class AuctionService {
     }
 
     @Transactional
-    public BidPostResponse createBid(BidPostRequest request, String username) {
-        Item item = itemService.getItem(request.itemId());
-        User user = userService.getUserByUsername(username);
-
-        ItemStatus itemStatus = itemStatusService.getItemStatus(request.itemId());
-
-        if (itemStatusService.auctionEndedOrNot(request.itemId())) {
-            throw new BaseException("Auction has already ended");
-        }
-
-        // The seller can't bid on their own item.
-        if (username.equals(item.getUser().getUsername())) {
-            throw new BaseException("You can't place bids on your own item.");
-        }
-
-        // You can only bid if your bid is higher than the current highest bid
-        if (request.bidAmount() < itemStatus.getCurrentPrice() + itemStatus.getBidIncrement()) {
-            throw new BaseException("You can only bid if your bid is higher than the current highest bid.");
-        }
-
-        // Bid amount must be higher than starting price + bid increment
-        if (request.bidAmount() < itemStatus.getStartingPrice() + itemStatus.getBidIncrement()) {
-            throw new BaseException("Bid amount is below the required minimum (starting price + bid increment)");
-        }
-
-        // Calculate how much additional money needs to be locked
+    public BaseObjectResponse<Bid> createBid(
+        BidPostRequest request,
+        String username
+    ) {
         Bid bid;
-        double additionalDeduction;
-        boolean isExistingBid = bidService.existUserAndItem(user, item);
+        Item item = itemService.getItemRef(request.itemId());
+        User user = userService.getUserRef(username);
 
-        if (isExistingBid) {
+        ItemStatus itemStatus = itemStatusService.getItemStatus(
+            request.itemId()
+        );
+
+        validateBasicBidRequirement(
+            item,
+            user,
+            itemStatus,
+            request.bidAmount()
+        );
+
+        if (bidService.existUserAndItem(user, item)) {
             bid = bidService.getBidByUserAndItem(user, item);
-            additionalDeduction = request.bidAmount() - bid.getBidAmount();
             bid.setBidAmount(request.bidAmount());
+            bidService.saveBid(bid);
         } else {
             bid = new Bid(item, user, request.bidAmount());
-            additionalDeduction = request.bidAmount();
+            bidService.saveBid(bid);
         }
 
-        // Check if user has enough balance for the additional amount
-        if (additionalDeduction > user.getBalance()) {
-            throw new BaseException("Insufficient balance to place bid");
+        Optional<AutoBid> autoBidOP = bidService.getAutoBidByItemId(
+            request.itemId()
+        );
+
+        if (
+            autoBidOP.isPresent() &&
+            !autoBidOP.get().getBidder().getUsername().equals(username)
+        ) {
+            AutoBid autoBid = autoBidOP.get();
+
+            if (request.bidAmount() > autoBid.getMaxBidLimit()) {
+                User autoUser = autoBid.getBidder();
+                userService.addBalance(autoUser.getUsername(), autoBid.getMaxBidLimit());
+                userService.deductBalance(username, request.bidAmount());
+
+                updateItemStatusHighestBidder(
+                    itemStatus,
+                    username,
+                    request.bidAmount()
+                );
+            } else {
+                double autoCounter = Math.min(
+                    request.bidAmount() + itemStatus.getBidIncrement(),
+                    autoBid.getMaxBidLimit()
+                );
+
+                autoBid.setCurrentBidValue(autoCounter);
+                bidService.saveAutoBid(autoBid);
+
+                updateItemStatusHighestBidder(
+                    itemStatus,
+                    autoBid.getBidder().getUsername(),
+                    autoCounter
+                );
+            }
+        } else {
+            userService.deductBalance(username, request.bidAmount());
+
+            if (
+                !itemStatus
+                    .getHighestBidUser()
+                    .equals(item.getUser().getUsername())
+            ) {
+                userService.addBalance(itemStatus.getHighestBidUser(), itemStatus.getCurrentPrice());
+            }
+
+            updateItemStatusHighestBidder(
+                itemStatus,
+                username,
+                request.bidAmount()
+            );
         }
 
-        bidService.saveBid(bid);
-
-        // Deduct the additional amount from user's balance
-        user.setBalance(user.getBalance() - additionalDeduction);
-        userService.saveUser(user);
-
-        // Refund previous highest bidder (if not the seller and not the current user)
-        String prevHighestBidder = itemStatus.getHighestBidUser();
-        if (!prevHighestBidder.equals(item.getUser().getUsername())
-                && !prevHighestBidder.equals(username)) {
-            User prevUser = userService.getUserByUsername(prevHighestBidder);
-            prevUser.setBalance(prevUser.getBalance() + itemStatus.getCurrentPrice());
-            userService.saveUser(prevUser);
-        }
-
-        // Update item status to the current highest bidder
-        itemStatus.setHighestBidUser(username);
-        itemStatus.setCurrentPrice(request.bidAmount());
-
-        // Anti-sniping: if item has less than extraTime remaining, extend the auction
-        Long time = itemStatus.getEndTime();
-        Long extraTimes = Long.valueOf(extraTime);
-        Long now = Instant.now().toEpochMilli();
-        if (time - now < extraTime && time < itemStatus.getMaxEndTime()) {
-            itemStatus.setEndTime(now + extraTimes);
-        }
+        applyAntiBidExtension(itemStatus);
 
         itemStatusService.saveStatus(itemStatus);
-        itemPricesSink.publishPrice(request.itemId(), request.bidAmount());
-        return new BidPostResponse(true, "Successfully created bid for an item", bid);
+        itemPricesSink.publishPrice(
+            request.itemId(),
+            itemStatus.getCurrentPrice()
+        );
+        return new BaseObjectResponse<>(
+            true,
+            "Successfully created bid for an item",
+            bid
+        );
     }
 
     @Transactional(readOnly = true)
-    public BaseObjectResponse<Page<Bid>> getMyCurrentBids(String username, int page, int size) {
+    public BaseObjectResponse<Page<Bid>> getMyCurrentBids(
+        String username,
+        int page,
+        int size
+    ) {
         PageRequest pageable = PageRequest.of(page, size);
         User userRef = userService.getUserRef(username);
 
         Page<Bid> bids = bidService.getAllUserBid(userRef, pageable);
 
-        return new BaseObjectResponse<Page<Bid>>(true, "successfully got my bids", bids);
+        return new BaseObjectResponse<Page<Bid>>(
+            true,
+            "succesfully got my bids",
+            bids
+        );
     }
 
     @Transactional(readOnly = true)
     public BaseObjectResponse<List<BidAndItem>> getMyWinnings(String username) {
-
         List<Bid> bids = bidService.getUserWins(username);
         ArrayList<BidAndItem> items = new ArrayList<BidAndItem>();
         for (Bid bid : bids) {
             items.add(new BidAndItem(bid, bid.getItem()));
         }
-        return new BaseObjectResponse<List<BidAndItem>>(true, "successfully returned winnings", items);
+        return new BaseObjectResponse<List<BidAndItem>>(
+            true,
+            "successfully returned winnings",
+            items
+        );
     }
 
     @Transactional
@@ -149,40 +185,174 @@ public class AuctionService {
         ItemStatus itemStatus = itemStatusService.getItemStatus(itemId);
         User user = userService.getUserByUsername(username);
         Item item = itemService.getItem(itemId);
+        validateBasicBidRequirement(
+            item,
+            user,
+            itemStatus,
+            itemStatus.getBuyItNowPrice()
+        );
 
-        if (itemStatusService.auctionEndedOrNot(itemId)) {
-            throw new BaseException("This auction has ended");
+        Bid bid = new Bid(item, user, itemStatus.getBuyItNowPrice());
+        bidService.saveBid(bid);
+        userService.deductBalance(username, itemStatus.getBuyItNowPrice());
+
+        if (
+            !itemStatus.getHighestBidUser().equals(item.getUser().getUsername())
+        ) {
+            userService.addBalance(itemStatus.getHighestBidUser(), itemStatus.getCurrentPrice());
         }
 
-        // Seller can't buy their own item
-        if (username.equals(item.getUser().getUsername())) {
-            throw new BaseException("You can't buy your own item.");
-        }
+        updateItemStatusHighestBidder(
+            itemStatus,
+            username,
+            itemStatus.getBuyItNowPrice()
+        );
+        itemStatus.setEndTime(Instant.now().toEpochMilli());
+        itemStatusService.saveStatus(itemStatus);
 
-        // Buy now if balance >= buyitnow, buyitnow > currentprice
-        if (user.getBalance() >= itemStatus.getBuyItNowPrice()
-                && itemStatus.getBuyItNowPrice() > itemStatus.getCurrentPrice()) {
+        itemPricesSink.publishPrice(itemId, itemStatus.getBuyItNowPrice());
 
-            // Refund previous highest bidder (if not the seller)
-            String prevHighestBidder = itemStatus.getHighestBidUser();
-            if (!prevHighestBidder.equals(item.getUser().getUsername())) {
-                User prevUser = userService.getUserByUsername(prevHighestBidder);
-                prevUser.setBalance(prevUser.getBalance() + itemStatus.getCurrentPrice());
-                userService.saveUser(prevUser);
+        return new BaseResponse(true, "Successfully bought item");
+    }
+
+    @Transactional
+    public BaseResponse createAutoBid(
+        AutoBidRequest request,
+        String bidderName
+    ) {
+        User bidder = userService.getUserByUsername(bidderName);
+        Optional<AutoBid> autoBidOP = bidService.getAutoBidByItemId(
+            request.itemId()
+        );
+        ItemStatus itemStatus = itemStatusService.getItemStatus(
+            request.itemId()
+        );
+        AutoBid currentAutoBid = new AutoBid(
+            request.itemId(),
+            bidder,
+            request.maxBidLimit(),
+            null
+        );
+        Item item = itemService.getItem(request.itemId());
+        validateBasicBidRequirement(
+            item,
+            bidder,
+            itemStatus,
+            request.maxBidLimit()
+        );
+
+        boolean isSameAutoBidder =
+            autoBidOP.isPresent() &&
+            autoBidOP.get().getBidder().getUsername().equals(bidderName);
+
+        if (isSameAutoBidder) {
+            AutoBid prevAutoBid = autoBidOP.get();
+            double oldMax = prevAutoBid.getMaxBidLimit();
+            double newMax = request.maxBidLimit();
+
+            if (newMax > oldMax) {
+                userService.deductBalance(bidderName, newMax - oldMax);
+                prevAutoBid.setMaxBidLimit(newMax);
+                bidService.saveAutoBid(prevAutoBid);
+            } else if (newMax < oldMax) {
+                userService.addBalance(bidderName, oldMax - newMax);
+                prevAutoBid.setMaxBidLimit(newMax);
+                bidService.saveAutoBid(prevAutoBid);
             }
+        } else if (autoBidOP.isPresent()) {
+            AutoBid prevAutoBid = autoBidOP.get();
+            User prevUser = prevAutoBid.getBidder();
 
-            // Update bid status
-            itemStatus.setHighestBidUser(username);
-            itemStatus.setCurrentPrice(itemStatus.getBuyItNowPrice());
-            itemStatus.setEndTime(Instant.now().toEpochMilli());
+            if (request.maxBidLimit() > prevAutoBid.getMaxBidLimit()) {
+                userService.addBalance(prevUser.getUsername(), prevAutoBid.getMaxBidLimit());
+                userService.deductBalance(bidderName, request.maxBidLimit());
+                currentAutoBid.setCurrentBidValue(itemStatus.getNextBidStep());
+
+                itemStatus.setNextBidStep(bidderName);
+
+                bidService.saveAutoBid(currentAutoBid);
+            } else {
+                prevAutoBid.setCurrentBidValue(request.maxBidLimit());
+                updateItemStatusHighestBidder(
+                    itemStatus,
+                    prevUser.getUsername(),
+                    prevAutoBid.getCurrentBidValue()
+                );
+                bidService.saveAutoBid(prevAutoBid);
+            }
+            itemStatusService.saveStatus(itemStatus);
+        } else {
+            userService.addBalance(itemStatus.getHighestBidUser(), itemStatus.getCurrentPrice());
+
+            currentAutoBid.setCurrentBidValue(itemStatus.getNextBidStep());
+            bidService.saveAutoBid(currentAutoBid);
+
+            itemStatus.setNextBidStep(bidderName);
             itemStatusService.saveStatus(itemStatus);
 
-            // Deduct money from buyer's fund
-            user.setBalance(user.getBalance() - itemStatus.getBuyItNowPrice());
-            userService.saveUser(user);
-        } else {
-            throw new BaseException("You don't have enough money in your balance to buy the item");
+            userService.deductBalance(bidderName, request.maxBidLimit());
         }
-        return new BaseResponse(true, "Successfully bought item");
+        applyAntiBidExtension(itemStatus);
+        return new BaseResponse(true, "succesfully make auto bid");
+    }
+
+    private void validateBasicBidRequirement(
+        Item item,
+        User user,
+        ItemStatus itemStatus,
+        Double value
+    ) {
+        if (item.getUser().getUsername().equals(user.getUsername())) {
+            throw new BaseException("You can't place bid on your own item");
+        }
+        validateAuctionNotEnded(item.getItemId());
+        validateUserHaveEnoughMoney(user, value);
+        validateHigherThanCurrentPrice(itemStatus, value);
+    }
+
+    private void validateUserHaveEnoughMoney(User user, Double value) {
+        if (user.getBalance() < value) {
+            throw new BaseException("You don't have enough money");
+        }
+    }
+
+    private void validateAuctionNotEnded(Long itemId) {
+        if (itemStatusService.auctionEndedOrNot(itemId)) {
+            throw new BaseException("Auction has already ended");
+        }
+    }
+
+    private void updateItemStatusHighestBidder(
+        ItemStatus itemStatus,
+        String username,
+        Double bidAmount
+    ) {
+        itemStatus.setHighestBidUser(username);
+        itemStatus.setCurrentPrice(bidAmount);
+    }
+
+    private void validateHigherThanCurrentPrice(
+        ItemStatus itemStatus,
+        Double value
+    ) {
+        if (
+            itemStatus.getCurrentPrice() + itemStatus.getBidIncrement() > value
+        ) {
+            throw new BaseException(
+                "Your bid must be higher than the current highest"
+            );
+        }
+    }
+
+    private void applyAntiBidExtension(ItemStatus itemStatus) {
+        Long remainingTime =
+            itemStatus.getEndTime() - Instant.now().toEpochMilli();
+        if (
+            remainingTime < extraTime &&
+            itemStatus.getEndTime() < itemStatus.getMaxEndTime()
+        ) {
+            itemStatus.setEndTime(Instant.now().toEpochMilli() + extraTime);
+        }
+        itemStatusService.saveStatus(itemStatus);
     }
 }

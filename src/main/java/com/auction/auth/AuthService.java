@@ -11,6 +11,7 @@ import com.auction.auth.dto.AuthResponse;
 import com.auction.auth.dto.LoginRequest;
 import com.auction.auth.dto.RegisterRequest;
 import com.auction.auth.jwtools.JwtUtil;
+import com.auction.auth.jwtools.UserDetailsImpl;
 import com.auction.common.BaseException;
 import com.auction.common.BaseResponse;
 import com.auction.users.User;
@@ -37,7 +38,8 @@ public class AuthService {
     public AuthResponse refreshingToken(String refreshToken) {
         RefreshToken token = refreshTokenRepository.findRefreshTokenData(refreshToken)
                 .orElseThrow(() -> new BaseException("invalid refresh token"));
-        if (token.getCreatedAt() + refreshLifetime < Instant.now().toEpochMilli()) {
+        boolean isTokenExpired = token.getCreatedAt() + refreshLifetime < Instant.now().toEpochMilli();
+        if (isTokenExpired) {
             throw new BaseException("Refresh token has expired, please login again");
         }
         String newRefreshToken = jwtUtil.generateRefreshToken(token.getUsername());
@@ -75,5 +77,16 @@ public class AuthService {
         refreshTokenRepository.save(new RefreshToken(user.getUsername(), refreshToken));
         AuthResponse response = new AuthResponse(true, "Successfully logged in.", accessToken, refreshToken);
         return response;
+    }
+
+    @Transactional
+    public void revokeToken(String username) {
+        refreshTokenRepository.deleteById(username);
+    }
+
+    @Transactional
+    public BaseResponse logoutUser(UserDetailsImpl userDetailsImpl) {
+        revokeToken(userDetailsImpl.getUsername());
+        return new BaseResponse(true, "succesfully logout");
     }
 }

@@ -1,6 +1,7 @@
 package com.auction.auth;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -10,6 +11,7 @@ import com.auction.auth.dto.AuthResponse;
 import com.auction.auth.dto.LoginRequest;
 import com.auction.auth.dto.RefreshTokenRequest;
 import com.auction.auth.dto.RegisterRequest;
+import com.auction.auth.jwtools.UserDetailsImpl;
 import com.auction.common.BaseResponse;
 
 import jakarta.validation.Valid;
@@ -39,5 +41,11 @@ public class AuthController {
     public ResponseEntity<BaseResponse> register(@Valid @RequestBody RegisterRequest request) {
         BaseResponse response = authService.userRegister(request);
         return ResponseEntity.ok().body(response);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<BaseResponse> logout(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl) {
+        BaseResponse response = authService.logoutUser(userDetailsImpl);
+        return ResponseEntity.ok(response);
     }
 }

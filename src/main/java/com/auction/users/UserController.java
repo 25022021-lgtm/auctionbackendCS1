@@ -1,7 +1,7 @@
 package com.auction.users;
 
 import com.auction.auth.jwtools.UserDetailsImpl;
-import com.auction.users.dto.BalanceResponse;
+import com.auction.common.BaseObjectResponse;
 import com.auction.users.dto.DepositRequest;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
@@ -13,38 +13,46 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** REST controller for user profile and balance operations. */
 @SecurityRequirement(name = "bearerAuth")
 @RestController
 @RequestMapping("/users")
 public class UserController {
 
-  private final UserService userService;
+    private final UserService userService;
 
-  public UserController(UserService userService) {
-    this.userService = userService;
-  }
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
 
-  @PostMapping("/me/deposit")
-  public ResponseEntity<BalanceResponse> deposit(
-      @AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
-      @Valid @RequestBody DepositRequest request) {
-    BalanceResponse response =
-        userService.depositCredit(userDetailsImpl.getUsername(), request.amount());
-    return ResponseEntity.ok().body(response);
-  }
+    @PostMapping("/me/deposit")
+    public ResponseEntity<BaseObjectResponse<Double>> deposit(
+        @AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
+        @Valid @RequestBody DepositRequest request
+    ) {
+        BaseObjectResponse<Double> response = userService.depositCredit(
+            userDetailsImpl.getUsername(),
+            request.amount()
+        );
+        return ResponseEntity.ok().body(response);
+    }
 
-  @GetMapping("/me/balance")
-  public ResponseEntity<BalanceResponse> balance(
-      @AuthenticationPrincipal UserDetailsImpl userDetailsImpl) {
-    BalanceResponse response = userService.getBalance(userDetailsImpl.getUsername());
-    return ResponseEntity.ok().body(response);
-  }
+    @GetMapping("/me/balance")
+    public ResponseEntity<BaseObjectResponse<Double>> balance(
+        @AuthenticationPrincipal UserDetailsImpl userDetailsImpl
+    ) {
+        BaseObjectResponse<Double> response = userService.getBalance(
+            userDetailsImpl.getUsername()
+        );
+        return ResponseEntity.ok().body(response);
+    }
 
-  @GetMapping("/me")
-  public ResponseEntity<User> profile(
-      @AuthenticationPrincipal UserDetailsImpl userDetailsImpl) {
-    User response = userService.getUserByUsername(userDetailsImpl.getUsername());
-    return ResponseEntity.ok().body(response);
-  }
+    @GetMapping("/me")
+    public ResponseEntity<User> profile(
+        @AuthenticationPrincipal UserDetailsImpl userDetailsImpl
+    ) {
+        User response = userService.getUserByUsername(
+            userDetailsImpl.getUsername()
+        );
+        return ResponseEntity.ok().body(response);
+    }
 }
