@@ -1,16 +1,13 @@
 package com.auction.auth;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.time.Instant;
-import java.util.Optional;
-
+import com.auction.auth.dto.AuthResponse;
+import com.auction.auth.dto.LoginRequest;
+import com.auction.auth.dto.RegisterRequest;
+import com.auction.auth.jwtools.JwtUtil;
+import com.auction.common.BaseException;
+import com.auction.common.BaseResponse;
+import com.auction.users.User;
+import com.auction.users.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,14 +17,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import com.auction.auth.dto.AuthResponse;
-import com.auction.auth.dto.LoginRequest;
-import com.auction.auth.dto.RegisterRequest;
-import com.auction.auth.jwtools.JwtUtil;
-import com.auction.common.BaseException;
-import com.auction.common.BaseResponse;
-import com.auction.users.User;
-import com.auction.users.UserService;
+import java.time.Instant;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
@@ -126,7 +123,7 @@ class AuthServiceTest {
         RefreshToken tokenData = new RefreshToken();
         tokenData.setUsername("testuser");
         tokenData.setRefreshToken(oldRefreshToken);
-        
+
         // createdAt doesn't have a setter because it's managed by JPA @PrePersist. 
         // We use ReflectionTestUtils to inject the value for the test.
         ReflectionTestUtils.setField(tokenData, "createdAt", Instant.now().toEpochMilli()); // Fresh token
@@ -152,7 +149,7 @@ class AuthServiceTest {
         RefreshToken tokenData = new RefreshToken();
         tokenData.setUsername("testuser");
         tokenData.setRefreshToken(oldRefreshToken);
-        
+
         // Set creation time way back to simulate an expired token
         ReflectionTestUtils.setField(tokenData, "createdAt", Instant.now().toEpochMilli() - 700000000L);
 

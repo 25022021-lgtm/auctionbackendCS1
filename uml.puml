@@ -1,50 +1,486 @@
 @startuml
+title Auction Backend Project UML
 
-class User {
-    - String username
-    - String displayName
-    - String hashedPassword
-    - Double balance
+package "com.auction" {
+  class AuctionApplication {
+    + {static} void main(String[])
+  }
 }
 
-class RefreshToken {
+package "com.auction.auctionorchestration" {
+  class AuctionController {
+    - AuctionService auctionService
+    + ResponseEntity<BidPostResponse> placeBid(String, BidPostRequest)
+  }
+  class AuctionService {
+    - ItemService itemService
+    - ItemStatusService itemStatusService
+    - UserService userService
+    - BidService bidService
+    + BidPostResponse makeBid(BidPostRequest, String)
+  }
+
+  package "dto (auctionorchestration)" {
+    class BidPostRequest {
+      - Long itemId
+      - Double bidAmount
+      + Long itemId()
+      + Double bidAmount()
+    }
+    class BidPostResponse {
+      - boolean status
+      - String message
+      - Double currentBid
+      + boolean status()
+      + String message()
+      + Double currentBid()
+    }
+  }
+}
+
+package "com.auction.auth" {
+  class AuthController {
+    - AuthService authService
+    + ResponseEntity<BaseResponse> registerUser(RegisterRequest)
+    + ResponseEntity<AuthResponse> loginUser(LoginRequest)
+    + ResponseEntity<AuthResponse> refreshToken(RefreshTokenRequest)
+  }
+  class AuthService {
+    - RefreshTokenRepository refreshTokenRepository
+    - JwtUtil jwtUtil
+    - Long refreshLifetime
+    - PasswordEncoder passwordEncoder
+    - UserService userService
+    + AuthResponse refreshingToken(String)
+    + BaseResponse userRegister(RegisterRequest)
+    + AuthResponse loginUser(LoginRequest)
+  }
+  class RefreshToken {
     - String username
     - String refreshToken
+    - Long createdAt
+    ==
+    # RefreshToken()
+    + RefreshToken(String, String)
+    ~ void addTime()
+    + String getUsername()
+    + void setUsername(String)
+    + String getRefreshToken()
+    + void setRefreshToken(String)
+    + Long getCreatedAt()
+  }
+  interface RefreshTokenRepository {
+    + Optional<RefreshToken> findRefreshTokenData(String)
+  }
+
+  package "dto (auth)" {
+    class AuthResponse {
+      - String accessToken
+      - String refreshToken
+      + String getAccessToken()
+      + void setAccessToken(String)
+      + String getRefreshToken()
+      + void setRefreshToken(String)
+    }
+    class LoginRequest {
+      - String username
+      - String password
+      + String username()
+      + String password()
+    }
+    class RefreshTokenRequest {
+      - String refreshToken
+      + String refreshToken()
+    }
+    class RegisterRequest {
+      - String username
+      - String displayName
+      - String password
+      + String username()
+      + String displayName()
+      + String password()
+    }
+  }
+
+  package "jwtools" {
+    class CustomUserDetailsService {
+      - UserRepository userRepository
+      + UserDetails loadUserByUsername(String)
+    }
+    class JwtSecurityFilter {
+      - JwtUtil jwtUtil
+      - CustomUserDetailsService userDetailsService
+      + void doFilterInternal(HttpServletRequest, HttpServletResponse, FilterChain)
+      + String parseJwt(HttpServletRequest)
+      # boolean shouldNotFilter(HttpServletRequest)
+    }
+    class JwtUtil {
+      - String jwtSecret
+      - int jwtExpirationms
+      - int jwtRefreshExpirationms
+      - SecretKey key
+      + void init()
+      + String generateToken(String)
+      + String generateRefreshToken(String)
+      + String getUserFromToken(String)
+      + boolean validateJwtToken(String)
+    }
+    class UserDetailsImpl {
+      - String username
+      - String password
+      + {static} UserDetailsImpl build(User)
+      + Collection<? extends GrantedAuthority> getAuthorities()
+      + String getPassword()
+      + String getUsername()
+      + boolean isAccountNonExpired()
+      + boolean isAccountNonLocked()
+      + boolean isCredentialsNonExpired()
+      + boolean isEnabled()
+    }
+  }
 }
 
-class Item {
+package "com.auction.bids" {
+  class Bid {
+    - Long bidId
+    - Item item
+    - User user
+    - Double bidAmount
+    - Long time
+    ==
+    + Bid()
+    + Bid(Item, User, Double)
+    ~ void addTime()
+    + Long getBidId()
+    + void setBidId(Long)
+    + Item getItem()
+    + void setItem(Item)
+    + User getUser()
+    + void setUser(User)
+    + Double getBidAmount()
+    + void setBidAmount(Double)
+    + Long getTime()
+    + void setTime(Long)
+  }
+  class BidController {
+    - BidService bidService
+    + ResponseEntity<BaseObjectResponse<Page<Bid>>> getBidHistory(Long, int, int)
+    + ResponseEntity<BaseResponse> buyNow(Long, String)
+  }
+  interface BidRepository {
+    + Optional<Bid> findByUserAndItem(User, Item)
+    + Page<Bid> findAllByUser(User, Pageable)
+    + boolean existsByUserAndItem(User, Item)
+    + boolean existsByItem(Item)
+    + Page<Bid> findItemBidHistory(Pageable, Long)
+    + List<Bid> getWinsByUser(String, Long)
+    + Long deleteByItemAndUser(Item, User)
+  }
+  class BidService {
+    - BidRepository bidRepository
+    - UserService userService
+    - ItemStatusService itemStatusService
+    + BaseResponse buyItemNow(Long, String)
+    + BaseObjectResponse<Page<Bid>> getBidsOnItem(Long, int, int)
+    + boolean existUserAndItem(User, Item)
+    + Bid saveBid(Bid)
+    + Bid getBidByUserAndItem(User, Item)
+    + Page<Bid> getAllUserBid(User, Pageable)
+    + List<Bid> getUserWins(String)
+    + boolean deleteBid(User, Item)
+  }
+}
+
+package "com.auction.common" {
+  class BaseException {
+    ~ BaseResponse response
+    + BaseException(String)
+  }
+  class BaseObjectResponse<T> {
+    - T object
+    + T getObject()
+    + void setObject(T)
+  }
+  class BaseResponse {
+    - boolean status
+    - String message
+    + BaseResponse()
+    + BaseResponse(boolean, String)
+    + boolean getStatus()
+    + void setStatus(boolean)
+    + String getMessage()
+    + void setMessage(String)
+  }
+  class GlobalExceptionHandler {
+    + ResponseEntity<BaseResponse> handleBaseException(BaseException)
+    + ResponseEntity<BaseResponse> handleValidationExceptions(MethodArgumentNotValidException)
+  }
+  class ItemPricesSink {
+    - Sinks.Many<BidAndItem> sink
+    + Flux<BidAndItem> getFlux()
+    + void emit(BidAndItem)
+  }
+
+  package "annotations" {
+    annotation NoSpace
+    class NoSpaceValidator {
+      + boolean isValid(String, ConstraintValidatorContext)
+    }
+  }
+
+  package "jointdata" {
+    class BidAndItem {
+      - Long itemId
+      - Double newPrice
+      + BidAndItem(Long, Double)
+      + Long getItemId()
+      + Double getNewPrice()
+    }
+  }
+}
+
+package "com.auction.config" {
+  class SecurityConfig {
+    - JwtSecurityFilter jwtSecurityFilter
+    + JwtSecurityFilter authenticationJwtTokenFilter()
+    + PasswordEncoder passwordEncoder()
+    + SecurityFilterChain filterChain(HttpSecurity)
+  }
+
+  package "swag" {
+    class SwaggerCustomConfig {
+      + OpenAPI myOpenAPI()
+    }
+  }
+}
+
+package "com.auction.items" {
+  class Item {
     - Long itemId
     - User user
     - String title
     - String description
+    ==
+    + Item()
+    + Item(User, String, String)
+    + Long getItemId()
+    + User getUser()
+    + void setUser(User)
+    + String getTitle()
+    + void setTitle(String)
+    + String getDescription()
+    + void setDescription(String)
+  }
+  class ItemController {
+    - ItemService itemService
+    + ResponseEntity<BaseItemResponse> postItem(UserDetailsImpl, PublishItemRequest)
+    + ResponseEntity<BaseResponse> cancelItem(Long, UserDetailsImpl)
+    + ResponseEntity<BaseItemResponse> getItem(Long)
+    + ResponseEntity<GetItemsResponse> getItems()
+    + ResponseEntity<GetItemPagesResponse> getActiveItems(int, int)
+    + ResponseEntity<BaseObjectResponse<Page<Item>>> getListing(String, int, int)
+  }
+  interface ItemRepository {
+    + Page<Item> findActiveItemPage(Pageable, Long)
+    + Page<Item> findItemByUser(Pageable, User)
+  }
+  class ItemService {
+    - ItemRepository itemRepository
+    - UserService userService
+    - ItemStatusService itemStatusService
+    - Long maxExtraTime
+    + BaseItemResponse publishItem(PublishItemRequest, String)
+    + BaseResponse cancelItem(Long, String)
+    + BaseItemResponse getItemRes(Long)
+    + GetItemsResponse getItems()
+    + GetItemPagesResponse getActiveItemsByPageTitle(int, int)
+    + BaseObjectResponse<Page<Item>> getListingByUser(int, int, String)
+    + boolean existByItemId(Long)
+    + Item getItemRef(Long)
+    + Item getItem(Long)
+    + Item saveItem(Item)
+  }
+
+  package "dto (items)" {
+    class BaseItemResponse {
+      - Item item
+      + BaseItemResponse(boolean, String, Item)
+      + Item getItem()
+      + void setItem(Item)
+    }
+    class GetItemPagesResponse {
+      - Page<Item> itemPage
+      + GetItemPagesResponse(boolean, String, Page<Item>)
+      + Page<Item> getItemPage()
+      + void setItemPage(Page<Item>)
+    }
+    class GetItemsResponse {
+      - List<Item> items
+      + GetItemsResponse(boolean, String, List<Item>)
+      + List<Item> getItems()
+      + void setItems(List<Item>)
+    }
+    class PublishItemRequest {
+      - String title
+      - String description
+      - Long endTime
+      - Double startingPrice
+      - Double buyItNowPrice
+      - Double bidIncrement
+      + String title()
+      + String description()
+      + Long endTime()
+      + Double startingPrice()
+      + Double buyItNowPrice()
+      + Double bidIncrement()
+    }
+  }
 }
 
-class ItemStatus {
+package "com.auction.itemstatus" {
+  class ItemStatus {
     - Long id
     - Item item
     - Double currentPrice
     - String highestBidUser
     - Long startTime
     - Long endTime
+    - Long maxEndTime
     - Double startingPrice
     - Double buyItNowPrice
     - Double bidIncrement
     - String itemStatus
+    ==
+    + ItemStatus()
+    + ItemStatus(Item, Double, String, Long, Double, Double, Double, Long)
+    ~ void makeItemActive()
+  }
+  class ItemStatusController {
+    - ItemStatusService itemStatusService
+    + ResponseEntity<ItemStatusGetResponse> getStatus(Long)
+  }
+  interface ItemStatusRepository {
+    + ItemStatus findByItemWithLock(Item)
+  }
+  class ItemStatusService {
+    - ItemStatusRepository itemStatusRepository
+    - ItemRepository itemRepository
+    + ItemStatus saveStatus(ItemStatus)
+    + ItemStatus updateStatus(Item, Double, String)
+    + ItemStatusGetResponse getStatusResponse(Long)
+    + ItemStatus getItemStatus(Long)
+    + List<ItemStatus> getAllItemStatus()
+    + boolean auctionEndedOrNot(Long)
+  }
+
+  package "dto (itemstatus)" {
+    class ItemStatusGetResponse {
+      - ItemStatus itemStatus
+      + ItemStatusGetResponse(boolean, String, ItemStatus)
+      + ItemStatus getItemStatus()
+      + void setItemStatus(ItemStatus)
+    }
+  }
 }
 
-class Bid {
-    - Long bidId
-    - Item item
-    - User user
-    - Double bidAmount
-    - Long time
+package "com.auction.users" {
+  class User {
+    - String username
+    - String displayName
+    - String hashedPassword
+    - Double balance
+    ==
+    + User()
+    + User(String, String, String, Double)
+    + UserResponse toResponse()
+    + String getUsername()
+    + void setUsername(String)
+    + String getDisplayName()
+    + void setDisplayName(String)
+    + String getHashedPassword()
+    + void setHashedPassword(String)
+    + Double getBalance()
+    + void setBalance(Double)
+  }
+  class UserController {
+    - UserService userService
+    + ResponseEntity<BalanceResponse> deposit(UserDetailsImpl, DepositRequest)
+    + ResponseEntity<BalanceResponse> balance(UserDetailsImpl)
+    + ResponseEntity<User> profile(UserDetailsImpl)
+  }
+  interface UserRepository {
+    + Optional<User> findByUsername(String)
+    + boolean existsByUsername(String)
+  }
+  class UserService {
+    - UserRepository userRepository
+    + User getUserReferenceByUsername(String)
+    + BalanceResponse depositCredit(String, Double)
+    + BalanceResponse getBalance(String)
+    + User getUserByUsername(String)
+    + boolean existsUsername(String)
+    + User saveUser(User)
+    + User getUserRef(String)
+  }
+
+  package "dto (users)" {
+    class BalanceResponse {
+      - Double balance
+      + BalanceResponse(boolean, String, Double)
+      + Double getBalance()
+      + void setBalance(Double)
+    }
+    class DepositRequest {
+      - Double amount
+      + Double amount()
+    }
+    class UserResponse {
+      - String username
+      - String displayname
+      - Double balance
+      + String username()
+      + String displayname()
+      + Double balance()
+    }
+  }
 }
 
-
+' Entity Relationships
 User "1" -- "1" RefreshToken
 User "1" -- "*" Item : sells >
 User "1" -- "*" Bid : places >
 Item "1" -- "1" ItemStatus : has >
 Item "1" -- "*" Bid : receives >
+
+' Layer Dependencies
+AuctionController --> AuctionService
+
+AuthController --> AuthService
+AuthService --> RefreshTokenRepository
+AuthService --> RefreshToken
+AuthService --> UserService
+AuthService --> JwtUtil
+
+BidController --> BidService
+BidService --> BidRepository
+BidService --> Bid
+
+ItemController --> ItemService
+ItemService --> ItemRepository
+ItemService --> Item
+ItemService --> ItemStatusService
+
+ItemStatusController --> ItemStatusService
+ItemStatusService --> ItemStatusRepository
+ItemStatusService --> ItemStatus
+
+UserController --> UserService
+UserService --> UserRepository
+UserService --> User
+
+' Infrastructure Dependencies
+CustomUserDetailsService --> UserRepository
+JwtSecurityFilter --> JwtUtil
+JwtSecurityFilter --> CustomUserDetailsService
 
 @enduml
