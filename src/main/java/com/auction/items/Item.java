@@ -1,8 +1,8 @@
 package com.auction.items;
 
 import com.auction.users.User;
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -21,9 +21,9 @@ public class Item {
     @Column(name = "item_id")
     private Long itemId;
 
-    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "username")
-    @ManyToOne // One seller many Item
-    @JoinColumn(name = "seller_username") // JoinColumn annotation creates a foreign key column
+    @JsonIgnore
+    @ManyToOne
+    @JoinColumn(name = "seller_username")
     private User user;
 
     @Column(name = "title", nullable = false)
@@ -67,6 +67,11 @@ public class Item {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    @JsonProperty("seller_username")
+    public String getSellerUsername() {
+        return user.getUsername();
     }
 
 }
