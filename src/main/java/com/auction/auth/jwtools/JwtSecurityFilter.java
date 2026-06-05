@@ -1,11 +1,18 @@
 package com.auction.auth.jwtools;
 
+import com.auction.auth.RevokedToken;
+import com.auction.auth.RevokedTokenRepository;
+import com.auction.auth.exceptions.JwtExpiredException;
+import com.auction.users.UserService;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -16,16 +23,6 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.servlet.HandlerExceptionResolver;
-
-import com.auction.auth.RevokedToken;
-import com.auction.auth.RevokedTokenRepository;
-import com.auction.auth.exceptions.JwtExpiredException;
-import com.auction.users.UserService;
-
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 
 //The actual jwt filter, extending OncePerRequestFilter means that this filer will only get run through once in the entire process.
 @Component
@@ -57,7 +54,10 @@ public class JwtSecurityFilter extends OncePerRequestFilter {
             PathPatternRequestMatcher.pathPattern("/login"),
             PathPatternRequestMatcher.pathPattern("/refresh"),
             PathPatternRequestMatcher.pathPattern(HttpMethod.GET, "/items/**"),
-            PathPatternRequestMatcher.pathPattern(HttpMethod.GET, "/item/status/**")
+            PathPatternRequestMatcher.pathPattern(
+                HttpMethod.GET,
+                "/item/status/**"
+            )
         );
     }
 
@@ -79,6 +79,7 @@ public class JwtSecurityFilter extends OncePerRequestFilter {
         } catch (JwtExpiredException e) {
             resolver.resolveException(request, response, null, e);
             isTokenValidated = false;
+            return;
         }
 
         if (encodedToken != null && isTokenValidated) {
