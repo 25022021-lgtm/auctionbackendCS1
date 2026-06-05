@@ -1,5 +1,5 @@
 # Nền tảng Đấu giá Thời gian thực (Backend)
-![](assets\banner.png)
+![](assets/banner.png)
 ## 1. Tổng quan Dự án
 
 Kho lưu trữ này chứa phần backend cho một nền tảng đấu giá thời gian thực. Hệ thống cung cấp API RESTful toàn diện để quản lý tài khoản người dùng, số dư quỹ, niêm yết các mặt hàng đấu giá, đặt giá thầu theo thời gian thực và truyền phát (stream) các bản cập nhật giá trực tiếp bằng Server-Sent Events (SSE). Hệ thống được thiết kế để đảm bảo tính mạnh mẽ, bảo mật và khả năng mở rộng, xử lý đặt giá thầu đồng thời và đảm bảo tính nhất quán của dữ liệu thông qua tính toàn vẹn của giao dịch (transactional integrity).
