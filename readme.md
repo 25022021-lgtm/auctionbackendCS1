@@ -1,111 +1,95 @@
-# Auction Platform Backend
+# Nền tảng Đấu giá Thời gian thực (Backend)
+![](assets\banner.png)
+## 1. Tổng quan Dự án
 
-This repository contains the backend for a real-time auction platform. It provides a comprehensive RESTful API for managing user accounts, funding balances, listing auction items, placing real-time bids, and streaming live price updates using Server-Sent Events (SSE).
-
-The backend is built using **Spring Boot**, **Spring Security**, **JPA/Hibernate**, and **SQLite**.
-
----
-
-## Features
-
-*   **User Authentication & Security:**
-    *   User registration and secure login.
-    *   JWT-based stateless authentication (`Bearer` tokens).
-    *   Refresh token mechanism to maintain seamless active user sessions.
-*   **User Profile & Balance Management:**
-    *   Deposit credits into user balances.
-    *   Query current balance and profile details.
-*   **Item & Auction Management:**
-    *   Publish items for auction with customized starting price, buy-it-now price, bid increment, and auction duration.
-    *   Retrieve all active auction listings via paginated lists.
-    *   Cancel active auctions before they receive bids.
-*   **Real-time Bidding Orchestration:**
-    *   Place bids on items with automatic validation (must satisfy starting price, bid increment, and seller restrictions).
-    *   Anti-sniping logic: Automatically extends auction end time if bids are placed close to expiration.
-    *   Lock and unlock funds dynamically: Automatically deducts additional funds for higher bids and refunds previous bidders.
-    *   Support for immediate purchase via "Buy Now" at the buy-it-now price.
-*   **Real-time Live Price Streaming:**
-    *   Leverages Reactive Spring WebFlux and Server-Sent Events (SSE) to stream real-time price updates to connected clients.
+Kho lưu trữ này chứa phần backend cho một nền tảng đấu giá thời gian thực. Hệ thống cung cấp API RESTful toàn diện để quản lý tài khoản người dùng, số dư quỹ, niêm yết các mặt hàng đấu giá, đặt giá thầu theo thời gian thực và truyền phát (stream) các bản cập nhật giá trực tiếp bằng Server-Sent Events (SSE). Hệ thống được thiết kế để đảm bảo tính mạnh mẽ, bảo mật và khả năng mở rộng, xử lý đặt giá thầu đồng thời và đảm bảo tính nhất quán của dữ liệu thông qua tính toàn vẹn của giao dịch (transactional integrity).
 
 ---
 
-## Technologies Used
+## 2. Công nghệ & Môi trường
 
-*   **Core Framework:** Spring Boot
-*   **Database:** SQLite (embedded)
-*   **ORM / JPA:** Spring Data JPA / Hibernate
-*   **Security:** Spring Security, JSON Web Tokens (JWT)
-*   **Reactive Streaming:** Project Reactor (Flux/Mono) for Server-Sent Events (SSE)
-*   **API Documentation:** Swagger UI (Springdoc OpenAPI)
+*   **Framework chính:** Spring Boot
+*   **Ngôn ngữ:** Java 26
+*   **Cơ sở dữ liệu:** SQLite (nhúng, dễ dàng chuyển đổi nền tảng)
+*   **Truy cập Dữ liệu:** Spring Data JPA / Hibernate
+*   **Bảo mật:** Spring Security với JWT để xác thực không trạng thái (stateless).
+*   **Lập trình Phản ứng (Reactive):** Project Reactor (Flux/Mono) để truyền phát Server-Sent Events (SSE).
+*   **Tài liệu API:** Springdoc OpenAPI (Swagger UI)
+*   **Công cụ Build:** Gradle
+
+### Yêu cầu Cài đặt
+
+*   **JDK 26:** Đảm bảo bạn đã cài đặt Java Development Kit (JDK) tương thích.
+*   **Gradle:** Dự án đã bao gồm sẵn Gradle Wrapper (`gradlew`), vì vậy không bắt buộc phải cài đặt Gradle cục bộ trên máy.
 
 ---
 
-## Getting Started
+## 3. Cấu trúc Dự án
 
-### Prerequisites
+Dự án tuân theo kiến trúc phân lớp tiêu chuẩn, được tổ chức theo tính năng vào các package chính sau:
 
-*   Java 26 (or compatible JDK version)
-*   Gradle (wrapper included in project)
+*   **/auth**: Xử lý đăng ký, đăng nhập và quản lý token người dùng (access token và refresh token).
+*   **/users**: Quản lý hồ sơ người dùng và số dư ví.
+*   **/items**: Quản lý việc tạo và truy xuất các mặt hàng đấu giá.
+*   **/itemstatus**: Theo dõi trạng thái thời gian thực của từng cuộc đấu giá (ví dụ: giá, người trả giá cao nhất, thời gian kết thúc).
+*   **/bids**: Chứa logic để đặt và truy xuất các lượt trả giá (bids).
+*   **/auctionorchestration**: Dịch vụ cốt lõi phối hợp các tương tác giữa người dùng, mặt hàng và lượt trả giá để đảm bảo tuân thủ các quy tắc nghiệp vụ.
+*   **/config**: Chứa cấu hình cấp ứng dụng, bao gồm thiết lập bảo mật và tài liệu Swagger.
+*   **/common**: Các thành phần dùng chung, bao gồm các ngoại lệ (exceptions) tùy chỉnh, các lớp bọc phản hồi (response wrappers), và các chú thích (annotations).
 
-### Running the Application
+---
 
-1.  **Clone the repository:**
+## 4. Hướng dẫn Chạy
+
+Dự án này sử dụng Gradle wrapper, đảm bảo rằng bất kỳ ai cũng có thể build và chạy dự án với đúng phiên bản Gradle mà không cần cài đặt thủ công. Các câu lệnh có thể chạy trên nhiều nền tảng (Windows, macOS, và Linux).
+
+### Server (Backend)
+
+1.  **Clone repository:**
     ```bash
     git clone https://github.com/your-username/auction-backend.git
     cd auction-backend
     ```
 
-2.  **Build and run using Gradle wrapper:**
+2.  **Cấp quyền thực thi cho Gradle wrapper (chỉ dành cho macOS/Linux):**
+    Nếu bạn đang dùng hệ điều hành macOS hoặc Linux, bạn cần cấp quyền thực thi cho script wrapper.
+    ```bash
+    chmod +x gradlew
+    ```
+
+3.  **Chạy ứng dụng:**
+    Sử dụng câu lệnh sau để build và khởi động server.
     ```bash
     ./gradlew bootRun
     ```
 
-The application starts on port `8080` by default.
+Backend server sẽ khởi chạy tại `http://localhost:8080`.
+
+### Client (Frontend)
+
+*(Vui lòng thêm hướng dẫn chạy client frontend của bạn tại đây. Ví dụ:)*
+
+1.  Điều hướng vào thư mục dự án client của bạn.
+2.  Chạy lệnh `npm install`.
+3.  Chạy lệnh `npm start`.
 
 ---
 
-## API Documentation & Explorer
+## 5. Các Chức năng đã Hoàn thành
 
-Interactive API documentation and playground are available via Swagger UI. Once the backend is running, open your browser and navigate to:
-[http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
-
----
-
-## Endpoint Reference
-
-### 1. Authentication Endpoints
-*   `POST /register` - Register a new account.
-*   `POST /login` - Log in and obtain an access token and refresh token.
-*   `POST /refresh` - Request a new access token using a valid refresh token.
-
-### 2. User & Balance Endpoints
-*   `GET /users/me` - Get profile details of the authenticated user.
-*   `GET /users/me/balance` - Retrieve current wallet balance.
-*   `POST /users/me/deposit` - Deposit credits into the user balance.
-
-### 3. Item Endpoints
-*   `POST /items` - Publish a new item for auction.
-*   `GET /items` - Get a paginated list of active items.
-*   `GET /items/{itemId}` - Retrieve details of a specific item.
-*   `GET /items/listings/{username}` - Get all auction listings published by a specific user.
-*   `POST /items/cancel/{itemId}` - Cancel an active auction listing (seller only).
-*   `GET /items/all` - Retrieve all items (testing/dev endpoint).
-
-### 4. Bidding & Auction Orchestration Endpoints
-*   `POST /bid` - Place a bid on an active auction item.
-*   `POST /buy-now/{itemId}` - Purchase an item immediately at the Buy-It-Now price.
-*   `GET /me/bids` - Retrieve active bids placed by the authenticated user.
-*   `GET /me/wins` - Retrieve items won by the authenticated user.
-*   `GET /bids/{itemId}/bids` - Get the bid history for a specific item.
-*   `GET /items/stream/{itemId}` - SSE endpoint to stream real-time price updates for an item.
+*   **Xác thực Người dùng:** Đầy đủ quy trình đăng ký, đăng nhập và refresh token.
+*   **Quản lý Số dư:** Người dùng có thể nạp tiền và xem số dư của mình.
+*   **Tạo Phiên Đấu giá:** Người dùng có thể niêm yết các mặt hàng để đấu giá với các thông số chi tiết.
+*   **Đấu giá Thời gian thực:** Người dùng có thể đặt giá cho các mặt hàng đang hoạt động. Hệ thống xử lý việc khóa quỹ, hoàn tiền khi có người trả giá cao hơn, và ngăn chặn các lượt trả giá không hợp lệ.
+*   **Mua Ngay (Buy It Now):** Chức năng cho phép người dùng mua ngay lập tức một mặt hàng.
+*   **Hủy Đấu giá:** Người bán có thể hủy phiên đấu giá nếu chưa có lượt trả giá nào được đặt.
+*   **Chống bắn tỉa (Anti-Sniping):** Thời gian kết thúc đấu giá sẽ tự động được gia hạn nếu có lượt trả giá được đặt trong những khoảnh khắc cuối cùng.
+*   **Cập nhật Giá Trực tiếp:** Một endpoint Server-Sent Events (SSE) sẽ truyền phát các thay đổi giá đến tất cả các client đang xem một mặt hàng.
+*   **Tài liệu API:** API được lập tài liệu đầy đủ và có thể truy cập qua Swagger UI.
 
 ---
 
-## System Architecture
+## 6. Báo cáo & Demo
 
-The application is structured into clearly separated layers:
-
-1.  **Controller Layer (`*Controller.java`):** Exposes REST and SSE endpoints, processes HTTP requests, validates inputs, and maps responses.
-2.  **Service Layer (`*Service.java`):** Implements business logic, orchestrates transactional boundaries, manages entity state transitions, and publishes event updates.
-3.  **Repository Layer (`*Repository.java`):** Interfaces with SQLite using Spring Data JPA.
-4.  **Security Config (`SecurityConfig.java`):** Configures security filters, password hashing, and authentication requirements for protected API endpoints.
+*   **Báo cáo PDF:** [Link đến báo cáo PDF của bạn trên Google Drive]
+*   **Video Demo:** [Link đến video demo của bạn trên Google Drive]
