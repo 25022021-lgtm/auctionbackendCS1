@@ -1,10 +1,16 @@
 package com.auction.common;
 
+/**
+ * Lớp phản hồi API cơ sở, định nghĩa cấu trúc dữ liệu chuẩn trả về cho mọi yêu cầu API.
+ */
 public class BaseResponse {
+    // Trạng thái của yêu cầu (true nếu thành công, false nếu thất bại)
     private boolean status;
 
+    // Thông điệp hoặc mô tả chi tiết đi kèm phản hồi
     private String message;
 
+    // Constructor mặc định cần thiết cho thư viện Jackson thực hiện quá trình Deserialize/Serialize JSON
     public BaseResponse() {
     }
 
@@ -17,9 +23,6 @@ public class BaseResponse {
         return status;
     }
 
-    // Empty Constructor so that Jackson can create and use the set methods to
-    // inject data in
-
     public void setStatus(boolean status) {
         this.status = status;
     }
@@ -31,5 +34,4 @@ public class BaseResponse {
     public void setMessage(String message) {
         this.message = message;
     }
-
 }
