@@ -3,12 +3,16 @@ package com.auction.auth.jwtools;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.servlet.HandlerExceptionResolver;
@@ -31,6 +35,8 @@ public class JwtSecurityFilter extends OncePerRequestFilter {
     private final RevokedTokenRepository revokedTokenRepository;
     private final UserService userService;
     private final HandlerExceptionResolver resolver;
+    private final List<RequestMatcher> publicMatchers;
+
     public JwtSecurityFilter(
         JwtUtil jwtUtil,
         UserService userService,
@@ -41,6 +47,18 @@ public class JwtSecurityFilter extends OncePerRequestFilter {
         this.userService = userService;
         this.revokedTokenRepository = revokedTokenRepository;
         this.resolver = resolver;
+        this.publicMatchers = List.of(
+            PathPatternRequestMatcher.pathPattern("/users/login"),
+            PathPatternRequestMatcher.pathPattern("/swagger-ui/**"),
+            PathPatternRequestMatcher.pathPattern("/swagger.json"),
+            PathPatternRequestMatcher.pathPattern("/swagger-ui.html"),
+            PathPatternRequestMatcher.pathPattern("/v3/api-docs/**"),
+            PathPatternRequestMatcher.pathPattern("/register"),
+            PathPatternRequestMatcher.pathPattern("/login"),
+            PathPatternRequestMatcher.pathPattern("/refresh"),
+            PathPatternRequestMatcher.pathPattern(HttpMethod.GET, "/items/**"),
+            PathPatternRequestMatcher.pathPattern(HttpMethod.GET, "/item/status/**")
+        );
     }
 
     /**
@@ -108,6 +126,11 @@ public class JwtSecurityFilter extends OncePerRequestFilter {
         }
         // Continue the fiterChain
         filterChain.doFilter(request, response);
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        return publicMatchers.stream().anyMatch(m -> m.matches(request));
     }
 
     // Checks basic structure of jwt
