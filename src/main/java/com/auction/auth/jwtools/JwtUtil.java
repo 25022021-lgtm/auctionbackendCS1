@@ -9,9 +9,10 @@ import javax.crypto.SecretKey;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import com.auction.auth.exceptions.JwtExpiredException;
+
 @Component
 public class JwtUtil {
-
     @Value("${jwt.secret}")
     private String jwtSecret;
 
@@ -68,13 +69,14 @@ public class JwtUtil {
             .getIssuedAt();
     }
 
-    public boolean validateJwtToken(String token) {
+    // Checks the jwt claim (the strange hash thing)
+    public boolean validateJwtToken(String token) throws JwtExpiredException {
         try {
             Jwts.parser().verifyWith(key).build().parseSignedClaims(token);
             return true;
         } catch (Exception e) {
             System.err.printf("JWT validation error: %s", e.getMessage());
+            throw new JwtExpiredException();
         }
-        return false;
     }
 }

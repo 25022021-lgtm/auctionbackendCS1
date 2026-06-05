@@ -2,6 +2,8 @@ package com.auction.auth.jwtools;
 
 import com.auction.auth.RevokedToken;
 import com.auction.auth.RevokedTokenRepository;
+import com.auction.auth.exceptions.JwtExpiredException;
+import com.auction.users.UserService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -9,28 +11,54 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.servlet.HandlerExceptionResolver;
 
+//The actual jwt filter, extending OncePerRequestFilter means that this filer will only get run through once in the entire process.
 @Component
 public class JwtSecurityFilter extends OncePerRequestFilter {
 
-    private JwtUtil jwtUtil;
-    private CustomUserDetailsService userDetailsService;
-    private RevokedTokenRepository revokedTokenRepository;
+    private final JwtUtil jwtUtil;
+    private final RevokedTokenRepository revokedTokenRepository;
+    private final UserService userService;
+    private final HandlerExceptionResolver resolver;
+    private final List<RequestMatcher> publicMatchers;
 
     public JwtSecurityFilter(
         JwtUtil jwtUtil,
-        CustomUserDetailsService userDetailsService,
-        RevokedTokenRepository revokedTokenRepository
+        UserService userService,
+        RevokedTokenRepository revokedTokenRepository,
+        @Qualifier("handlerExceptionResolver") HandlerExceptionResolver resolver
     ) {
         this.jwtUtil = jwtUtil;
-        this.userDetailsService = userDetailsService;
+        this.userService = userService;
         this.revokedTokenRepository = revokedTokenRepository;
+        this.resolver = resolver;
+        this.publicMatchers = List.of(
+            PathPatternRequestMatcher.pathPattern("/users/login"),
+            PathPatternRequestMatcher.pathPattern("/swagger-ui/**"),
+            PathPatternRequestMatcher.pathPattern("/swagger.json"),
+            PathPatternRequestMatcher.pathPattern("/swagger-ui.html"),
+            PathPatternRequestMatcher.pathPattern("/v3/api-docs/**"),
+            PathPatternRequestMatcher.pathPattern("/register"),
+            PathPatternRequestMatcher.pathPattern("/login"),
+            PathPatternRequestMatcher.pathPattern("/refresh"),
+            PathPatternRequestMatcher.pathPattern(HttpMethod.GET, "/items/**"),
+            PathPatternRequestMatcher.pathPattern(
+                HttpMethod.GET,
+                "/item/status/**"
+            )
+        );
     }
 
     /**
@@ -44,24 +72,45 @@ public class JwtSecurityFilter extends OncePerRequestFilter {
         FilterChain filterChain
     ) throws ServletException, IOException {
         String encodedToken = parseJwt(request);
-        // allow unauthenticated requests to proceed, let controller-level security
         // handle authorization
-        if (encodedToken != null && jwtUtil.validateJwtToken(encodedToken)) {
+        boolean isTokenValidated;
+        try {
+            isTokenValidated = jwtUtil.validateJwtToken(encodedToken);
+        } catch (JwtExpiredException e) {
+            resolver.resolveException(request, response, null, e);
+            isTokenValidated = false;
+            return;
+        }
+
+        if (encodedToken != null && isTokenValidated) {
             String username = jwtUtil.getUserFromToken(encodedToken);
             Date issuedAt = jwtUtil.getIssuedAtFromToken(encodedToken);
 
-            Optional<RevokedToken> revoked = revokedTokenRepository.findById(username);
+            Optional<RevokedToken> revoked = revokedTokenRepository.findById(
+                username
+            );
+
             if (revoked.isPresent()) {
-                if (!issuedAt.toInstant().isAfter(Instant.ofEpochMilli(revoked.get().getBannedAt()))) {
+                // if the time of issued is before the time of the revoke -> user is banned.
+                // else if the time of the issue is after the time of the revoke -> means that the user has been unbanned (since they were logged in)
+                if (
+                    !issuedAt
+                        .toInstant()
+                        .isAfter(
+                            Instant.ofEpochMilli(revoked.get().getBannedAt())
+                        )
+                ) {
                     filterChain.doFilter(request, response);
                     return;
                 }
                 revokedTokenRepository.delete(revoked.get());
             }
 
-            UserDetailsImpl userDetails = userDetailsService.loadUserByUsername(
-                username
+            UserDetailsImpl userDetails = UserDetailsImpl.JPAtoUserDetails(
+                userService.getUserByUsername(username)
             );
+
+            // authenticationToken is a warapper for UserDetailsImpl
             UsernamePasswordAuthenticationToken authenticationToken =
                 new UsernamePasswordAuthenticationToken(
                     userDetails,
@@ -71,13 +120,21 @@ public class JwtSecurityFilter extends OncePerRequestFilter {
             authenticationToken.setDetails(
                 new WebAuthenticationDetailsSource().buildDetails(request)
             );
+            // adds auth credentials.
             SecurityContextHolder.getContext().setAuthentication(
                 authenticationToken
             );
         }
+        // Continue the fiterChain
         filterChain.doFilter(request, response);
     }
 
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        return publicMatchers.stream().anyMatch(m -> m.matches(request));
+    }
+
+    // Checks basic structure of jwt
     public String parseJwt(HttpServletRequest request) {
         String authenticationHeader = request.getHeader("Authorization");
 
