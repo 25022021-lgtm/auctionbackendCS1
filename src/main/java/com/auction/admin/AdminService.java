@@ -7,10 +7,11 @@ import com.auction.auth.AuthService;
 import com.auction.auth.RevokedToken;
 import com.auction.auth.RevokedTokenRepository;
 import com.auction.common.*;
-import com.auction.common.BaseResponse;
 import com.auction.items.ItemService;
 import com.auction.users.User;
 import com.auction.users.UserService;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +23,9 @@ public class AdminService {
     private final AuthService authService;
     private final PasswordEncoder passwordEncoder;
     private final RevokedTokenRepository revokedTokenRepository;
+
+    @Value("${ban_hash}")
+    private String banHash;
 
     public AdminService(
         ItemService itemService,
@@ -48,7 +52,7 @@ public class AdminService {
         }
         User user = userService.getUserByUsername(username);
         authService.revokeToken(username);
-        user.setHashedPassword("1");
+        user.setHashedPassword(banHash);
         authService.revokeToken(username);
         userService.saveUser(user);
 

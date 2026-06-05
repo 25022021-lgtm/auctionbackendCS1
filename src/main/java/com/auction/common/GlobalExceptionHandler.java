@@ -9,6 +9,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.auction.auth.exceptions.JwtExpiredException;
+
 import jakarta.persistence.EntityNotFoundException;
 
 @RestControllerAdvice
@@ -36,4 +38,8 @@ public class GlobalExceptionHandler {
                 .body(new BaseResponse(false, "What you find does not exist"));
     }
 
+    @ExceptionHandler(JwtExpiredException.class)
+    public ResponseEntity<BaseResponse> handleJwtExpiredException() {
+        return ResponseEntity.status(498).body(new BaseResponse(false, "Your jwt token expired"));
+    }
 }

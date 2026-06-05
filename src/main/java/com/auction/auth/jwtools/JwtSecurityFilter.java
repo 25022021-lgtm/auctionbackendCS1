@@ -1,21 +1,27 @@
 package com.auction.auth.jwtools;
 
-import com.auction.auth.RevokedToken;
-import com.auction.auth.RevokedTokenRepository;
-import com.auction.users.UserService;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.servlet.HandlerExceptionResolver;
+
+import com.auction.auth.RevokedToken;
+import com.auction.auth.RevokedTokenRepository;
+import com.auction.auth.exceptions.JwtExpiredException;
+import com.auction.users.UserService;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 //The actual jwt filter, extending OncePerRequestFilter means that this filer will only get run through once in the entire process.
 @Component
@@ -24,15 +30,17 @@ public class JwtSecurityFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final RevokedTokenRepository revokedTokenRepository;
     private final UserService userService;
-
+    private final HandlerExceptionResolver resolver;
     public JwtSecurityFilter(
         JwtUtil jwtUtil,
         UserService userService,
-        RevokedTokenRepository revokedTokenRepository
+        RevokedTokenRepository revokedTokenRepository,
+        @Qualifier("handlerExceptionResolver") HandlerExceptionResolver resolver
     ) {
         this.jwtUtil = jwtUtil;
         this.userService = userService;
         this.revokedTokenRepository = revokedTokenRepository;
+        this.resolver = resolver;
     }
 
     /**
@@ -46,9 +54,16 @@ public class JwtSecurityFilter extends OncePerRequestFilter {
         FilterChain filterChain
     ) throws ServletException, IOException {
         String encodedToken = parseJwt(request);
-        // allow unauthenticated requests to proceed, let controller-level security
         // handle authorization
-        if (encodedToken != null && jwtUtil.validateJwtToken(encodedToken)) {
+        boolean isTokenValidated;
+        try {
+            isTokenValidated = jwtUtil.validateJwtToken(encodedToken);
+        } catch (JwtExpiredException e) {
+            resolver.resolveException(request, response, null, e);
+            isTokenValidated = false;
+        }
+
+        if (encodedToken != null && isTokenValidated) {
             String username = jwtUtil.getUserFromToken(encodedToken);
             Date issuedAt = jwtUtil.getIssuedAtFromToken(encodedToken);
 
@@ -86,6 +101,7 @@ public class JwtSecurityFilter extends OncePerRequestFilter {
             authenticationToken.setDetails(
                 new WebAuthenticationDetailsSource().buildDetails(request)
             );
+            // adds auth credentials.
             SecurityContextHolder.getContext().setAuthentication(
                 authenticationToken
             );

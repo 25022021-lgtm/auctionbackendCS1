@@ -26,6 +26,9 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final UserService userService;
 
+    @Value("${ban_hash}")
+    private String banHash;
+
     public AuthService(RefreshTokenRepository refreshTokenRepository, JwtUtil jwtUtil,
             PasswordEncoder passwordEncoder, UserService userService) {
         this.refreshTokenRepository = refreshTokenRepository;
@@ -65,7 +68,9 @@ public class AuthService {
     public AuthResponse loginUser(LoginRequest request) {
 
         User user = userService.getUserByUsername(request.username());
-
+        if (user.getHashedPassword().equals(banHash)) {
+            throw new BaseException("User was banned");
+        }
         if (!passwordEncoder.matches(request.password(), user.getHashedPassword())) {
             throw new BaseException("Invalid username or password");
         }
