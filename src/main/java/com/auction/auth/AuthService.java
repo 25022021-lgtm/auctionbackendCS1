@@ -89,7 +89,7 @@ public class AuthService {
         // Tạo người dùng mới với số dư ví mặc định là 0.0
         User user = new User(request.username(), request.displayName(), hashedPassword, 0.0);
         userService.saveUser(user);
-        return new BaseResponse(true, "Succesfully registered.");
+        return new BaseResponse(true, "Successfully registered.");
     }
 
     /**
@@ -119,7 +119,7 @@ public class AuthService {
         // Lưu thông tin Refresh Token vào cơ sở dữ liệu để phục vụ kiểm tra và gia hạn sau này
         refreshTokenRepository.save(new RefreshToken(user.getUsername(), refreshToken));
 
-        return new AuthResponse(true, "Succesfully logged in.", accessToken, refreshToken);
+        return new AuthResponse(true, "Successfully logged in.", accessToken, refreshToken);
     }
 
     /**
@@ -141,6 +141,6 @@ public class AuthService {
     @Transactional
     public BaseResponse logoutUser(UserDetailsImpl userDetailsImpl) {
         revokeToken(userDetailsImpl.getUsername());
-        return new BaseResponse(true, "succesfully logout");
+        return new BaseResponse(true, "successfully logout");
     }
 }
