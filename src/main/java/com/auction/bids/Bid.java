@@ -16,37 +16,51 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
+/**
+ * Thực thể Bid đại diện cho một lượt đặt giá thủ công của người dùng đối với một sản phẩm đấu giá.
+ */
 @Entity
 @Table(name = "bids")
 public class Bid {
+
+    // Mã ID lượt đặt giá (Khóa chính), tự động tăng
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "bid_id")
     private Long bidId;
 
+    // Sản phẩm đấu giá liên kết. Một sản phẩm có thể có nhiều lượt đặt giá.
     @JsonIgnore
-    @ManyToOne // Many bids, Item
+    @ManyToOne
     @JoinColumn(name = "item_id")
     private Item item;
 
+    // Người thực hiện đặt giá. Một người dùng có thể thực hiện nhiều lượt đặt giá.
     @JsonIgnore
-    @ManyToOne // One Bidder many Bid
+    @ManyToOne
     @JoinColumn(name = "bidder_username")
     private User user;
 
+    // Số tiền đặt cược cho lượt đấu giá này
     @Column(name = "bid_amount")
     private Double bidAmount;
 
+    // Thời gian đặt giá (Epoch Milliseconds)
     @Column(name = "bid_time")
     private Long time;
 
+    /**
+     * Sự kiện Jpa Lifecycle Callback: Tự động ghi lại thời gian thực hiện đặt giá trước khi lưu vào cơ sở dữ liệu.
+     */
     @PrePersist
     void addTime() {
         time = Instant.now().toEpochMilli();
     }
 
     public Bid() {
-    };
+    }
+
+    ;
 
     public Bid(Item item, User bidder_username, Double bidAmount) {
         this.item = item;
@@ -92,31 +106,5 @@ public class Bid {
 
     public void setTime(Long time) {
         this.time = time;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof Bid)) {
-            return false;
-        }
-        Bid bid = (Bid) o;
-        return bidId != null && bidId.equals(bid.bidId);
-    }
-
-    @Override
-    public int hashCode() {
-        return bidId != null ? bidId.hashCode() : 0;
-    }
-
-    @Override
-    public String toString() {
-        return "Bid{" +
-                "bidId=" + bidId +
-                ", bidAmount=" + bidAmount +
-                ", time=" + time +
-                '}';
     }
 }
