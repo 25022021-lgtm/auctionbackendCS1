@@ -14,6 +14,9 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
+/**
+ * Controller chịu trách nhiệm xử lý các yêu cầu API liên quan đến lịch sử đặt giá cược (Bids).
+ */
 @SecurityRequirement(name = "bearerAuth")
 @RestController
 @RequestMapping("/bids")
@@ -24,6 +27,15 @@ public class BidController {
         this.bidService = bidService;
     }
 
+    /**
+     * API truy vấn phân trang danh sách lịch sử đặt giá (bids) của một sản phẩm cụ thể.
+     * GET /bids/{itemId}/bids
+     *
+     * @param itemId Mã ID của sản phẩm cần lấy lịch sử đấu giá
+     * @param page   Số trang hiện tại cần lấy (bắt đầu từ 0)
+     * @param size   Số lượng bản ghi mỗi trang (tối thiểu 1, tối đa 20, mặc định 10)
+     * @return ResponseEntity chứa danh sách phân trang lịch sử đặt giá
+     */
     @GetMapping("/{itemId}/bids")
     public ResponseEntity<BaseObjectResponse<Page<Bid>>> getBids(
             @PathVariable Long itemId,

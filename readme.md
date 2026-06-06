@@ -1,95 +1,192 @@
-# Nền tảng Đấu giá Thời gian thực (Backend)
-![](assets/banner.png)
-## 1. Tổng quan Dự án
+# 🔨 Real-time Auction Platform Backend
 
-Kho lưu trữ này chứa phần backend cho một nền tảng đấu giá thời gian thực. Hệ thống cung cấp API RESTful toàn diện để quản lý tài khoản người dùng, số dư quỹ, niêm yết các mặt hàng đấu giá, đặt giá thầu theo thời gian thực và truyền phát (stream) các bản cập nhật giá trực tiếp bằng Server-Sent Events (SSE). Hệ thống được thiết kế để đảm bảo tính mạnh mẽ, bảo mật và khả năng mở rộng, xử lý đặt giá thầu đồng thời và đảm bảo tính nhất quán của dữ liệu thông qua tính toàn vẹn của giao dịch (transactional integrity).
+[![Java](https://img.shields.io/badge/Java-26-orange.svg?style=flat-square&logo=openjdk)](https://openjdk.org/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.5-brightgreen.svg?style=flat-square&logo=springboot)](https://spring.io/projects/spring-boot)
+[![SQLite](https://img.shields.io/badge/SQLite-Database-blue.svg?style=flat-square&logo=sqlite)](https://www.sqlite.org/)
+[![Reactive Streams](https://img.shields.io/badge/Reactive-Reactor-purple.svg?style=flat-square&logo=reactive-x)](https://projectreactor.io/)
 
----
-
-## 2. Công nghệ & Môi trường
-
-*   **Framework chính:** Spring Boot
-*   **Ngôn ngữ:** Java 26
-*   **Cơ sở dữ liệu:** SQLite (nhúng, dễ dàng chuyển đổi nền tảng)
-*   **Truy cập Dữ liệu:** Spring Data JPA / Hibernate
-*   **Bảo mật:** Spring Security với JWT để xác thực không trạng thái (stateless).
-*   **Lập trình Phản ứng (Reactive):** Project Reactor (Flux/Mono) để truyền phát Server-Sent Events (SSE).
-*   **Tài liệu API:** Springdoc OpenAPI (Swagger UI)
-*   **Công cụ Build:** Gradle
-
-### Yêu cầu Cài đặt
-
-*   **JDK 26:** Đảm bảo bạn đã cài đặt Java Development Kit (JDK) tương thích.
-*   **Gradle:** Dự án đã bao gồm sẵn Gradle Wrapper (`gradlew`), vì vậy không bắt buộc phải cài đặt Gradle cục bộ trên máy.
+Dự án này là hệ thống Backend cho sàn đấu giá trực tuyến thời gian thực (Real-time Auction Platform). Hệ thống cung cấp các API RESTful bảo mật và cơ chế phát dữ liệu thời gian thực (Server-Sent Events) giúp cập nhật biến động giá sản phẩm và số dư tài khoản người dùng ngay lập tức.
 
 ---
 
-## 3. Cấu trúc Dự án
-
-Dự án tuân theo kiến trúc phân lớp tiêu chuẩn, được tổ chức theo tính năng vào các package chính sau:
-
-*   **/auth**: Xử lý đăng ký, đăng nhập và quản lý token người dùng (access token và refresh token).
-*   **/users**: Quản lý hồ sơ người dùng và số dư ví.
-*   **/items**: Quản lý việc tạo và truy xuất các mặt hàng đấu giá.
-*   **/itemstatus**: Theo dõi trạng thái thời gian thực của từng cuộc đấu giá (ví dụ: giá, người trả giá cao nhất, thời gian kết thúc).
-*   **/bids**: Chứa logic để đặt và truy xuất các lượt trả giá (bids).
-*   **/auctionorchestration**: Dịch vụ cốt lõi phối hợp các tương tác giữa người dùng, mặt hàng và lượt trả giá để đảm bảo tuân thủ các quy tắc nghiệp vụ.
-*   **/config**: Chứa cấu hình cấp ứng dụng, bao gồm thiết lập bảo mật và tài liệu Swagger.
-*   **/common**: Các thành phần dùng chung, bao gồm các ngoại lệ (exceptions) tùy chỉnh, các lớp bọc phản hồi (response wrappers), và các chú thích (annotations).
+## 📌 Mục lục
+1. [Tính năng nổi bật](#-tính-năng-nổi-bật)
+2. [Kiến trúc hệ thống](#-kiến-trúc-hệ-thống)
+3. [Công nghệ sử dụng](#-công-nghệ-sử-dụng)
+4. [Cấu hình hệ thống](#-cấu-hình-hệ-thống)
+5. [Hướng dẫn cài đặt & Chạy dự án](#-hướng-dẫn-cài-đặt--chạy-dự-án)
+6. [Tài liệu API chi tiết](#-tài-liệu-api-chi-tiết)
+7. [Ghi chú kỹ thuật về SQLite](#-ghi-chú-kỹ-thuật-về-sqlite)
 
 ---
 
-## 4. Hướng dẫn Chạy
+## 🚀 Tính năng nổi bật
 
-Dự án này sử dụng Gradle wrapper, đảm bảo rằng bất kỳ ai cũng có thể build và chạy dự án với đúng phiên bản Gradle mà không cần cài đặt thủ công. Các câu lệnh có thể chạy trên nhiều nền tảng (Windows, macOS, và Linux).
+### 1. Quản lý người dùng & Bảo mật
+*   **Đăng ký & Đăng nhập:** Bảo mật thông tin người dùng với cơ chế mã hóa mật khẩu.
+*   **Xác thực JWT (JSON Web Tokens):** Cơ chế xác thực hai lớp với Access Token (ngắn hạn) và Refresh Token (dài hạn).
+*   **Quản trị viên (Admin Panel):** Khóa (Ban) người dùng vi phạm và mở khóa (Unban) kèm đặt lại mật khẩu.
 
-### Server (Backend)
+### 2. Quản lý sản phẩm đấu giá
+*   **Đăng bán sản phẩm:** Người bán có thể đăng sản phẩm lên kèm giá khởi điểm, bước giá tối thiểu, giá mua đứt (Buy It Now), và thời gian kết thúc phiên.
+*   **Hủy phiên đấu giá:** Người bán có thể tự hủy phiên đấu giá của mình, hoặc Admin có quyền force-cancel phiên đấu giá nếu phát hiện vi phạm.
+*   **Phân trang danh sách:** Hỗ trợ tải phân trang cho danh sách sản phẩm đang hoạt động hoặc sản phẩm do người dùng cụ thể đăng bán.
 
-1.  **Clone repository:**
+### 3. Cơ chế Đấu giá linh hoạt
+*   **Đặt cược thủ công (Manual Bid):** Người dùng đặt cược trực tiếp với số tiền hợp lệ (lớn hơn giá hiện tại + bước giá tối thiểu).
+*   **Tự động đặt cược (Auto-Bid):** Người dùng cài đặt mức giới hạn tối đa, hệ thống sẽ tự động tăng giá cược khi có người khác trả giá cao hơn.
+*   **Mua ngay (Buy It Now):** Mua đứt sản phẩm với mức giá định sẵn, phiên đấu giá sẽ kết thúc ngay lập tức.
+*   **Thời gian bù giờ chống bắn tỉa (Anti-Sniping):** Khi có lượt đặt cược mới gần thời gian kết thúc, hệ thống sẽ tự động cộng thêm thời gian bù giờ (`extra_time` cấu hình trong file properties).
+
+### 4. Phát trực tuyến dữ liệu thời gian thực (Real-time SSE)
+*   **Biến động giá sản phẩm:** Sử dụng Server-Sent Events (SSE) qua Project Reactor (`Flux`) để cập nhật giá trực tiếp lên màn hình client mà không cần reload.
+*   **Số dư tài khoản:** Đẩy thông tin biến động số dư ví cá nhân theo thời gian thực mỗi khi có giao dịch nạp tiền hoặc đặt cược.
+
+---
+
+## 🏗 Kiến trúc hệ thống
+
+Dự án áp dụng mô hình kiến trúc phân lớp chuẩn (Layered Architecture) kết hợp với Reactive Streams (SSE) để xử lý các luồng dữ liệu thời gian thực.
+
+```mermaid
+graph TD
+    Client[Client Browser / Mobile] -->|1. Xác thực & Lấy JWT| AuthController[AuthController]
+    Client -->|2. Đăng bán / Xem sản phẩm| ItemController[ItemController]
+    Client -->|3. Đặt cược / Auto-Bid / Mua ngay| AuctionController[AuctionController]
+    Client -->|4. Đăng ký nhận luồng SSE| SSE[Server-Sent Events Flux]
+    
+    AuctionController -->|Điều phối luồng nghiệp vụ| AuctionService[AuctionService]
+    AuctionService -->|Ghi dữ liệu| DB[(SQLite Database)]
+    AuctionService -->|Phát biến động giá| ItemPricesSink[ItemPricesSink]
+    AuctionService -->|Phát biến động số dư| UserBalanceSink[UserBalanceSink]
+    
+    ItemPricesSink -->|Đẩy sự kiện giá mới| SSE
+    UserBalanceSink -->|Đẩy sự kiện số dư mới| SSE
+```
+
+### Chi tiết các lớp:
+*   **Controller Layer (`*Controller.java`):** Tiếp nhận HTTP Request từ client, thực hiện validate dữ liệu đầu vào thông qua các annotations `@Valid` và điều hướng tới Service tương ứng.
+*   **Service Layer (`*Service.java`):** Lớp xử lý logic nghiệp vụ chính (tính toán bước giá, quản lý thời gian đấu giá, xử lý trừ tiền/hoàn tiền đặt cược cũ, tự động đặt giá).
+*   **Repository Layer (`*Repository.java`):** Giao tiếp trực tiếp với cơ sở dữ liệu SQLite thông qua Spring Data JPA.
+
+---
+
+## 🛠 Công nghệ sử dụng
+
+*   **Java 26:** Sử dụng các tính năng mới nhất của ngôn ngữ Java.
+*   **Spring Boot 4.0.5:** Phiên bản Spring Boot hiện đại tối ưu hiệu năng.
+*   **Spring Security & Spring Boot Starter Validation:** Đảm bảo an toàn thông tin và kiểm tra tính hợp lệ của dữ liệu đầu vào.
+*   **Spring WebFlux & Project Reactor:** Hỗ trợ xử lý bất đồng bộ và cơ chế Reactive Streams để truyền tải luồng SSE thời gian thực.
+*   **SQLite Database & Hibernate community dialect:** Lưu trữ dữ liệu dạng tệp nhẹ nhàng, dễ triển khai mà không cần cài đặt server DB cồng kềnh.
+*   **JJWT (Java JWT):** Thư viện tạo và kiểm tra chữ ký token JWT (`jjwt-api`, `jjwt-impl`, `jjwt-jackson`).
+*   **Springdoc OpenAPI (Swagger UI):** Tự động phát sinh tài liệu API trực quan.
+
+---
+
+## ⚙ Cấu hình hệ thống
+
+Các thiết lập quan trọng trong file [application.properties](file:///C:/Coding/GitHub/auctionbackendCS1/src/main/resources/application.properties):
+
+```properties
+# Cấu hình SQLite database (tạo file auctiondb.db ngay tại thư mục gốc dự án)
+spring.datasource.url=jdbc:sqlite:auctiondb.db
+spring.datasource.driver-class-name=org.sqlite.JDBC
+spring.jpa.database-platform=org.hibernate.community.dialect.SQLiteDialect
+spring.jpa.hibernate.ddl-auto=update
+
+# Cấu hình Pool Connection cho SQLite (giới hạn tối đa 1 connection để tránh lỗi khóa ghi cơ sở dữ liệu)
+spring.datasource.hikari.maximum-pool-size=1
+
+# Cấu hình bảo mật JWT (thời gian tính bằng miliseconds)
+jwt.secret=245cd2618f11d11d206e3131ee119341eb6f6926a35acefbcbfe1f05fb50fb20
+jwt.expiration=360000          # 5 phút (Access Token)
+jwt.refreshExpiration=604800000 # 7 ngày (Refresh Token)
+
+# Cấu hình thời gian bù giờ cho đấu giá
+max_extra_time=7200000 # Giới hạn thời gian bù giờ tối đa (2 giờ)
+extra_time=360000      # Thời gian cộng thêm cho mỗi lượt cược cuối phiên (5 phút)
+```
+
+---
+
+## 💻 Hướng dẫn cài đặt & Chạy dự án
+
+### Yêu cầu hệ thống
+*   Cài đặt **Java 26 hoặc cao hơn**.
+*   Công cụ quản lý gói **Gradle**.
+
+### Các bước khởi chạy
+1.  **Clone mã nguồn dự án:**
     ```bash
     git clone https://github.com/your-username/auction-backend.git
     cd auction-backend
     ```
-
-2.  **Cấp quyền thực thi cho Gradle wrapper (chỉ dành cho macOS/Linux):**
-    Nếu bạn đang dùng hệ điều hành macOS hoặc Linux, bạn cần cấp quyền thực thi cho script wrapper.
-    ```bash
-    chmod +x gradlew
-    ```
-
-3.  **Chạy ứng dụng:**
-    Sử dụng câu lệnh sau để build và khởi động server.
+2.  **Xây dựng và chạy dự án thông qua Gradle:**
     ```bash
     ./gradlew bootRun
     ```
+    *(Trên Windows, bạn có thể chạy bằng lệnh: `gradlew.bat bootRun`)*
 
-Backend server sẽ khởi chạy tại `http://localhost:8080`.
-
-### Client (Frontend)
-
-*(Vui lòng thêm hướng dẫn chạy client frontend của bạn tại đây. Ví dụ:)*
-
-1.  Điều hướng vào thư mục dự án client của bạn.
-2.  Chạy lệnh `npm install`.
-3.  Chạy lệnh `npm start`.
+3.  **Truy cập API Swagger UI:**
+    Sau khi ứng dụng khởi chạy thành công trên cổng `8080`, hãy truy cập đường link sau để xem tài liệu chi tiết và chạy thử nghiệm các API:
+    [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
 
 ---
 
-## 5. Các Chức năng đã Hoàn thành
+## 📑 Tài liệu API chi tiết
 
-*   **Xác thực Người dùng:** Đầy đủ quy trình đăng ký, đăng nhập và refresh token.
-*   **Quản lý Số dư:** Người dùng có thể nạp tiền và xem số dư của mình.
-*   **Tạo Phiên Đấu giá:** Người dùng có thể niêm yết các mặt hàng để đấu giá với các thông số chi tiết.
-*   **Đấu giá Thời gian thực:** Người dùng có thể đặt giá cho các mặt hàng đang hoạt động. Hệ thống xử lý việc khóa quỹ, hoàn tiền khi có người trả giá cao hơn, và ngăn chặn các lượt trả giá không hợp lệ.
-*   **Mua Ngay (Buy It Now):** Chức năng cho phép người dùng mua ngay lập tức một mặt hàng.
-*   **Hủy Đấu giá:** Người bán có thể hủy phiên đấu giá nếu chưa có lượt trả giá nào được đặt.
-*   **Chống bắn tỉa (Anti-Sniping):** Thời gian kết thúc đấu giá sẽ tự động được gia hạn nếu có lượt trả giá được đặt trong những khoảnh khắc cuối cùng.
-*   **Cập nhật Giá Trực tiếp:** Một endpoint Server-Sent Events (SSE) sẽ truyền phát các thay đổi giá đến tất cả các client đang xem một mặt hàng.
-*   **Tài liệu API:** API được lập tài liệu đầy đủ và có thể truy cập qua Swagger UI.
+Tất cả các API ngoại trừ đăng nhập, đăng ký và làm mới token đều yêu cầu Header: `Authorization: Bearer <JWT_ACCESS_TOKEN>`.
+
+### 1. Nhóm API Xác thực & Người dùng (`/`)
+| Phương thức | API | Mô tả | Authentication |
+|---|---|---|---|
+| `POST` | `/register` | Đăng ký tài khoản người dùng mới | Không yêu cầu |
+| `POST` | `/login` | Đăng nhập tài khoản, nhận Access Token & Refresh Token | Không yêu cầu |
+| `POST` | `/refresh` | Làm mới Access Token đã hết hạn bằng Refresh Token | Không yêu cầu |
+| `POST` | `/logout` | Đăng xuất hệ thống và thu hồi token hiện tại | Yêu cầu JWT |
+| `GET` | `/users/me` | Lấy thông tin chi tiết hồ sơ cá nhân | Yêu cầu JWT |
+| `GET` | `/users/me/balance` | Xem số dư ví tiền hiện tại | Yêu cầu JWT |
+| `POST` | `/users/me/deposit` | Nạp tiền vào tài khoản ví cá nhân | Yêu cầu JWT |
+
+### 2. Nhóm API Quản lý Sản phẩm (`/items`)
+| Phương thức | API | Mô tả | Authentication |
+|---|---|---|---|
+| `POST` | `/items` | Đăng bán một mặt hàng đấu giá mới | Yêu cầu JWT |
+| `GET` | `/items` | Lấy danh sách các sản phẩm đang đấu giá (hỗ trợ phân trang) | Yêu cầu JWT |
+| `GET` | `/items/{itemId}` | Lấy chi tiết thông tin của sản phẩm qua ID | Yêu cầu JWT |
+| `POST` | `/items/cancel/{itemId}` | Người bán tự hủy phiên đấu giá sản phẩm của mình | Yêu cầu JWT |
+| `GET` | `/items/listings/{username}` | Lấy danh sách sản phẩm đăng bán của một user cụ thể | Yêu cầu JWT |
+| `GET` | `/items/all` | Lấy toàn bộ sản phẩm trên hệ thống (Dành cho Dev) | Yêu cầu JWT |
+
+### 3. Nhóm API Đấu giá & Theo dõi (Real-time SSE)
+| Phương thức | API | Mô tả | Authentication |
+|---|---|---|---|
+| `POST` | `/bid` | Đặt giá cược thủ công cho một mặt hàng | Yêu cầu JWT |
+| `POST` | `/auto-bid` | Thiết lập cấu hình tự động đấu giá (Auto-Bid) | Yêu cầu JWT |
+| `POST` | `/buy-now/{itemId}` | Mua đứt sản phẩm ngay theo mức giá Buy It Now | Yêu cầu JWT |
+| `GET` | `/me/bids` | Xem lịch sử các lượt đặt cược của bản thân (phân trang) | Yêu cầu JWT |
+| `GET` | `/me/wins` | Lấy danh sách các sản phẩm đã thắng cuộc | Yêu cầu JWT |
+| `GET` | `/bids/{itemId}/bids` | Xem danh sách các lượt đặt cược của một sản phẩm cụ thể | Yêu cầu JWT |
+| `GET` | `/item/status/{itemId}` | Xem trạng thái đấu giá hiện tại của sản phẩm | Yêu cầu JWT |
+| `GET` | `/items/stream/{itemId}` | **SSE Stream:** Lắng nghe biến động giá sản phẩm thời gian thực | Yêu cầu JWT |
+| `GET` | `/{username}/balance/stream`| **SSE Stream:** Lắng nghe biến động số dư tài khoản thời gian thực | Yêu cầu JWT |
+
+### 4. Nhóm API Quản trị viên (`/admin`)
+| Phương thức | API | Mô tả | Vai trò |
+|---|---|---|---|
+| `POST` | `/admin/ban` | Khóa tài khoản người dùng vi phạm | Admin |
+| `POST` | `/admin/unban` | Mở khóa tài khoản người dùng & đặt lại mật khẩu mới | Admin |
+| `POST` | `/admin/cancel/{itemId}` | Hủy bỏ một phiên đấu giá sản phẩm bất kỳ trên hệ thống | Admin |
 
 ---
 
-## 6. Báo cáo & Demo
+## 💾 Ghi chú kỹ thuật về SQLite
 
-*   **Báo cáo PDF:** [Link đến báo cáo PDF của bạn trên Google Drive]
-*   **Video Demo:** [Link đến video demo của bạn trên Google Drive]
+Mặc dù SQLite cực kỳ hữu dụng cho môi trường kiểm thử và phát triển nhanh do không yêu cầu cài đặt máy chủ, nó có một số hạn chế quan trọng về ghi đồng thời (write concurrency). 
+
+Để tránh hiện tượng khóa cơ sở dữ liệu (`database is locked`) khi thực hiện ghi đồng thời cao (nhiều lượt đặt cược diễn ra trong cùng một thời điểm), dự án đã thực hiện cấu hình giới hạn kết nối:
+```properties
+spring.datasource.hikari.maximum-pool-size=1
+```
+> [!IMPORTANT]
+> Việc đặt `maximum-pool-size=1` sẽ giúp tuần tự hóa tất cả các thao tác ghi vào SQLite, ngăn ngừa tranh chấp luồng ghi. Đối với môi trường Production chịu tải lớn, khuyến khích chuyển đổi cấu hình sang cơ sở dữ liệu có khả năng chịu tải cao hơn như **PostgreSQL** hoặc **MySQL**.

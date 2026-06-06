@@ -1,32 +1,37 @@
 package com.auction.common;
 
-/** Base response DTO containing status and message fields for API responses. */
+/**
+ * Lớp phản hồi API cơ sở, định nghĩa cấu trúc dữ liệu chuẩn trả về cho mọi yêu cầu API.
+ */
 public class BaseResponse {
+    // Trạng thái của yêu cầu (true nếu thành công, false nếu thất bại)
+    private boolean status;
 
-  private boolean status;
-  private String message;
+    // Thông điệp hoặc mô tả chi tiết đi kèm phản hồi
+    private String message;
 
-  /** Empty constructor so that Jackson can create and use the set methods to inject data in. */
-  public BaseResponse() {}
+    // Constructor mặc định cần thiết cho thư viện Jackson thực hiện quá trình Deserialize/Serialize JSON
+    public BaseResponse() {
+    }
 
-  public BaseResponse(boolean status, String message) {
-    this.status = status;
-    this.message = message;
-  }
+    public BaseResponse(boolean status, String message) {
+        this.status = status;
+        this.message = message;
+    }
 
-  public boolean getStatus() {
-    return status;
-  }
+    public boolean getStatus() {
+        return status;
+    }
 
-  public void setStatus(boolean status) {
-    this.status = status;
-  }
+    public void setStatus(boolean status) {
+        this.status = status;
+    }
 
-  public String getMessage() {
-    return message;
-  }
+    public String getMessage() {
+        return message;
+    }
 
-  public void setMessage(String message) {
-    this.message = message;
-  }
+    public void setMessage(String message) {
+        this.message = message;
+    }
 }
