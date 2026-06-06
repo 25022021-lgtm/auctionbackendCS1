@@ -1,5 +1,5 @@
 # 🔨 Real-time Auction Platform Backend
-
+![](assets/banner.png)
 [![Java](https://img.shields.io/badge/Java-26-orange.svg?style=flat-square&logo=openjdk)](https://openjdk.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.5-brightgreen.svg?style=flat-square&logo=springboot)](https://spring.io/projects/spring-boot)
 [![SQLite](https://img.shields.io/badge/SQLite-Database-blue.svg?style=flat-square&logo=sqlite)](https://www.sqlite.org/)
