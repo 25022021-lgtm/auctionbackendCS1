@@ -4,10 +4,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyDouble;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.auction.common.BaseObjectResponse;
 import java.time.Instant;
 import java.util.Optional;
 
@@ -21,7 +24,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.auction.bids.BidRepository;
 import com.auction.common.BaseException;
-import com.auction.common.BaseObjectResponse;
 import com.auction.common.BaseResponse;
 import com.auction.items.dto.PublishItemRequest;
 import com.auction.itemstatus.ItemStatus;
@@ -60,7 +62,8 @@ class ItemServiceTest {
         
         testItemStatus = new ItemStatus();
         testItemStatus.setItemStatus("ACTIVE");
-        testItemStatus.setHighestBidUser(testUser.getUsername());
+        testItemStatus.setHighestBidUser("anotheruser");
+        testItemStatus.setCurrentPrice(50.0);
 
         // Set the @Value field for maxExtraTime since it's null in unit tests
         ReflectionTestUtils.setField(itemService, "maxExtraTime", 3600000L); // 1 hour in ms
@@ -74,7 +77,6 @@ class ItemServiceTest {
         String username = "testuser";
 
         when(userService.getUserReferenceByUsername(username)).thenReturn(testUser);
-        // CORRECT: Mock the dependency (itemRepository), not the method on the class under test
         when(itemRepository.save(any(Item.class))).thenReturn(testItem);
 
         // Act
@@ -88,7 +90,7 @@ class ItemServiceTest {
     }
 
     @Test
-    void cancelItem_Success() {
+    void cancelItem_Success_RefundsHighestBidder() {
         // Arrange
         Long itemId = 1L;
         String username = "testuser";
@@ -105,6 +107,8 @@ class ItemServiceTest {
         assertEquals("Item successfully canceled.", response.getMessage());
         assertEquals("CANCELED", testItemStatus.getItemStatus());
         verify(itemStatusService).saveStatus(testItemStatus);
+        // Verify that the highest bidder was refunded
+        verify(userService).addBalance("anotheruser", 50.0);
     }
 
     @Test

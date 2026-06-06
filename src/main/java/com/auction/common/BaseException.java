@@ -12,4 +12,8 @@ public class BaseException extends RuntimeException {
         super(message);
         this.response = new BaseResponse(false, message);
     }
+
+    public BaseResponse getResponse() {
+        return response;
+    }
 }

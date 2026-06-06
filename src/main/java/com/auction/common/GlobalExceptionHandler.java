@@ -40,7 +40,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(BaseException.class)
     public ResponseEntity<BaseResponse> handleBaseException(BaseException exception) {
-        return ResponseEntity.badRequest().body(exception.response);
+        return ResponseEntity.badRequest().body(exception.getResponse());
     }
 
     /**
